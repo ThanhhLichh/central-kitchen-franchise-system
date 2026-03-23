@@ -28,11 +28,14 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 // 4. Khởi tạo Firebase
-FirebaseApp.Create(new AppOptions()
+if (File.Exists("firebase-adminsdk.json"))
 {
-    // Đảm bảo bạn có file JSON service account từ Firebase Console
-    Credential = GoogleCredential.FromFile("firebase-adminsdk.json") 
-});
+    FirebaseApp.Create(new AppOptions()
+    {
+        // Đảm bảo bạn có file JSON service account từ Firebase Console
+        Credential = GoogleCredential.FromFile("firebase-adminsdk.json") 
+    });
+}
 
 // 5. Đăng ký Services & Memory Cache
 builder.Services.AddMemoryCache();

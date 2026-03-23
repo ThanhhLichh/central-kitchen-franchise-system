@@ -17,7 +17,7 @@ RUN dotnet publish "AuthService.csproj" -c Release -o /app/publish /p:UseAppHost
 # STAGE 2: RUNTIME (Môi trường chạy thực tế)
 # ==========================================
 # Chỉ sử dụng bản ASP.NET Runtime (rất nhẹ, không chứa công cụ build)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
 # Mở cổng 8080 để giao tiếp bên ngoài
