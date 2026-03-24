@@ -5,7 +5,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy file .csproj vào trước và restore các thư viện (Nuget packages)
-# Việc này giúp Docker cache lại các thư viện, lần build sau sẽ cực kỳ nhanh
+# giúp Docker cache lại các thư viện, lần build sau sẽ cực kỳ nhanh
 COPY ["AuthService.csproj", "./"]
 RUN dotnet restore "./AuthService.csproj"
 
@@ -16,7 +16,7 @@ RUN dotnet publish "AuthService.csproj" -c Release -o /app/publish /p:UseAppHost
 # ==========================================
 # STAGE 2: RUNTIME (Môi trường chạy thực tế)
 # ==========================================
-# Chỉ sử dụng bản ASP.NET Runtime (rất nhẹ, không chứa công cụ build)
+# Chỉ sử dụng bản ASP.NET Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 

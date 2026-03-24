@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -43,7 +44,6 @@ namespace AuthService.Controllers
                     new Claim("LocationType", user.LocationType ?? "")
                 };
                 
-                // Cực kỳ quan trọng: Gắn StoreId vào Token
                 if (user.StoreId.HasValue)
                 {
                     authClaims.Add(new Claim("StoreId", user.StoreId.Value.ToString()));
@@ -66,14 +66,13 @@ namespace AuthService.Controllers
             var jti = User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
             if (jti != null)
             {
-                // Cho Token vào Blacklist Redis với thời gian sống bằng thời gian còn lại của Token
                 await _tokenCache.RevokeTokenAsync(jti, TimeSpan.FromMinutes(120));
             }
             return Ok("Đăng xuất thành công.");
         }
 
-        // Endpoint dành cho Nifi để đồng bộ dữ liệu User (Nifi sẽ gọi API này định kỳ)
         [HttpGet("sync-users")]
+        [Authorize]
         public IActionResult GetUsersForNifi([FromQuery] DateTime lastSyncTime)
         {
             var users = _userManager.Users
