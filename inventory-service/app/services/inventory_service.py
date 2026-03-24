@@ -1,6 +1,17 @@
 from app.models.inventory import Inventory
 from app.config.db import db
 
+def get_inventory():
+    stocks = Inventory.query.all()
+
+    return [
+        {
+            "product_id": s.product_id,
+            "quantity": s.quantity
+        }
+        for s in stocks
+    ]
+
 def check_stock(items):
     missing_items = []
 
@@ -34,3 +45,33 @@ def import_stock(product_id, quantity):
     db.session.commit()
 
     return {"message": "Stock updated"}
+
+def export_stock(items):
+    missing_items = []
+
+    for item in items:
+        product_id = item["product_id"]
+        qty = item["quantity"]
+
+        stock = Inventory.query.filter_by(product_id=product_id).first()
+
+        if not stock or stock.quantity < qty:
+            missing_items.append({
+                "product_id": product_id
+            })
+
+    if missing_items:
+        return {
+            "success": False,
+            "missing_items": missing_items
+        }
+
+    # đủ hàng → trừ kho
+    for item in items:
+        stock = Inventory.query.filter_by(product_id=item["product_id"]).first()
+        stock.quantity -= item["quantity"]
+
+    db.session.commit()
+
+    return {"success": True}
+
