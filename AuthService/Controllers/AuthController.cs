@@ -60,6 +60,44 @@ namespace AuthService.Controllers
             return Unauthorized("Sai tài khoản hoặc mật khẩu.");
         }
 
+        [HttpPost("create-user")]
+        [Authorize(Roles = "Admin")] 
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
+        {
+            
+            var userExists = await _userManager.FindByNameAsync(request.Username);
+            if (userExists != null)
+            {
+                return BadRequest("Tên đăng nhập này đã tồn tại trong hệ thống.");
+            }
+
+            
+            var newUser = new ApplicationUser
+            {
+                UserName = request.Username,
+                Email = request.Email,
+                FullName = request.FullName,
+                LocationType = request.LocationType,
+                StoreId = request.StoreId,
+                IsActive = true
+            };
+
+            
+            var result = await _userManager.CreateAsync(newUser, request.Password);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest($"Lỗi tạo tài khoản: {errors}");
+            }
+
+            if (!string.IsNullOrEmpty(request.RoleName))
+            {
+                await _userManager.AddToRoleAsync(newUser, request.RoleName);
+            }
+
+            return Ok(new { Message = $"Tạo tài khoản {request.Username} và cấp quyền {request.RoleName} thành công!" });
+        }
+
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
@@ -101,4 +139,18 @@ namespace AuthService.Controllers
         public string Username { get; set; }
         public string Password { get; set; }
     }
+
+        public class CreateUserRequest
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
+        public string Email { get; set; }
+        public string FullName { get; set; }
+        public string LocationType { get; set; } 
+        public Guid? StoreId { get; set; } 
+        public string RoleName { get; set; } 
+    }
+
+
+
 }
