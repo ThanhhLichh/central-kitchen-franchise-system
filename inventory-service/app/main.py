@@ -1,6 +1,7 @@
 from flask import Flask
 from app.config.db import init_db, db
 from app.routes.inventory_routes import inventory_bp
+from app.routes.product_routes import product_bp
 
 def create_app():
     app = Flask(__name__)
@@ -8,6 +9,7 @@ def create_app():
     init_db(app)
 
     app.register_blueprint(inventory_bp, url_prefix="/api")
+    app.register_blueprint(product_bp, url_prefix="/api")
 
     with app.app_context():
         db.create_all()
