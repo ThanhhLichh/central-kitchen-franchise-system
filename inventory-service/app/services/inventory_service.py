@@ -1,4 +1,7 @@
 from app.models.inventory import Inventory
+from app.models.stock_movement import StockMovement
+from app.repository.inventory_repository import InventoryRepository
+from app.repository.product_repository import ProductRepository
 from app.config.db import db
 
 def get_inventory():
@@ -34,44 +37,110 @@ def check_stock(items):
 
 
 def import_stock(product_id, quantity):
-    stock = Inventory.query.filter_by(product_id=product_id).first()
+    try:
+        # check product
+        product = ProductRepository.get_by_id(product_id)
+        if not product:
+            return {
+                "success": False,
+                "error": f"Product {product_id} not found"
+            }
 
-    if stock:
-        stock.quantity += quantity
-    else:
-        stock = Inventory(product_id=product_id, quantity=quantity)
-        db.session.add(stock)
+        stock = InventoryRepository.get_by_product_id(product_id)
 
-    db.session.commit()
+        if stock:
+            stock.quantity += quantity
+        else:
+            InventoryRepository.create(product_id, quantity)
 
-    return {"message": "Stock updated"}
+        # 🔥 log
+        movement = StockMovement(
+            product_id=product_id,
+            change=quantity,
+            type="import"
+        )
+        db.session.add(movement)
 
-def export_stock(items):
-    missing_items = []
+        InventoryRepository.commit()
 
-    for item in items:
-        product_id = item["product_id"]
-        qty = item["quantity"]
-
-        stock = Inventory.query.filter_by(product_id=product_id).first()
-
-        if not stock or stock.quantity < qty:
-            missing_items.append({
-                "product_id": product_id
-            })
-
-    if missing_items:
         return {
-            "success": False,
-            "missing_items": missing_items
+            "success": True,
+            "message": "Stock updated"
         }
 
-    # đủ hàng → trừ kho
-    for item in items:
-        stock = Inventory.query.filter_by(product_id=item["product_id"]).first()
-        stock.quantity -= item["quantity"]
+    except Exception as e:
+        InventoryRepository.rollback()
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
-    db.session.commit()
+def export_stock(items):
+    """
+    Trừ kho khi nhận message từ RabbitMQ
+    """
 
-    return {"success": True}
+    try:
+        # 🔥 Lấy danh sách product_id
+        product_ids = [item["product_id"] for item in items]
 
+        # 🔥 lấy product qua repository
+        products = ProductRepository.get_by_ids(product_ids)
+        product_map = {p.id: p for p in products}
+
+        # 🔥 lấy inventory qua repository
+        stocks = InventoryRepository.get_by_product_ids(product_ids)
+        stock_map = {s.product_id: s for s in stocks}
+
+        missing_items = []
+
+        for item in items:
+            pid = item["product_id"]
+            qty = item["quantity"]
+
+            # ❌ product không tồn tại
+            if pid not in product_map:
+                return {
+                    "success": False,
+                    "error": f"Product {pid} not found"
+                }
+
+            stock = stock_map.get(pid)
+
+            # ❌ không đủ hàng
+            if not stock or stock.quantity < qty:
+                missing_items.append({
+                    "product_id": pid
+                })
+
+        if missing_items:
+            return {
+                "success": False,
+                "missing_items": missing_items
+            }
+
+        # ✅ trừ kho
+        for item in items:
+            pid = item["product_id"]
+            qty = item["quantity"]
+
+            stock_map[pid].quantity -= qty
+
+            # 🔥 log lịch sử (StockMovement)
+            movement = StockMovement(
+                product_id=pid,
+                change=-qty,
+                type="export"
+            )
+            db.session.add(movement)
+
+        InventoryRepository.commit()
+
+        return {"success": True}
+
+    except Exception as e:
+        InventoryRepository.rollback()
+        return {
+            "success": False,
+            "error": str(e)
+        }
