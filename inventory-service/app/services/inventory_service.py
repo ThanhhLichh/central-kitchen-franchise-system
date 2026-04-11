@@ -1,7 +1,7 @@
 from app.models.inventory import Inventory
 from app.models.stock_movement import StockMovement
-from app.repository.inventory_repository import InventoryRepository
-from app.repository.product_repository import ProductRepository
+from app.repositories.inventory_repository import InventoryRepository
+from app.repositories.product_repository import ProductRepository
 from app.config.db import db
 
 def get_inventory():
@@ -38,7 +38,6 @@ def check_stock(items):
 
 def import_stock(product_id, quantity):
     try:
-        # check product
         product = ProductRepository.get_by_id(product_id)
         if not product:
             return {
@@ -53,7 +52,7 @@ def import_stock(product_id, quantity):
         else:
             InventoryRepository.create(product_id, quantity)
 
-        # 🔥 log
+        # log
         movement = StockMovement(
             product_id=product_id,
             change=quantity,
@@ -81,14 +80,11 @@ def export_stock(items):
     """
 
     try:
-        # 🔥 Lấy danh sách product_id
         product_ids = [item["product_id"] for item in items]
 
-        # 🔥 lấy product qua repository
         products = ProductRepository.get_by_ids(product_ids)
         product_map = {p.id: p for p in products}
 
-        # 🔥 lấy inventory qua repository
         stocks = InventoryRepository.get_by_product_ids(product_ids)
         stock_map = {s.product_id: s for s in stocks}
 
@@ -98,7 +94,6 @@ def export_stock(items):
             pid = item["product_id"]
             qty = item["quantity"]
 
-            # ❌ product không tồn tại
             if pid not in product_map:
                 return {
                     "success": False,
@@ -107,7 +102,6 @@ def export_stock(items):
 
             stock = stock_map.get(pid)
 
-            # ❌ không đủ hàng
             if not stock or stock.quantity < qty:
                 missing_items.append({
                     "product_id": pid
@@ -119,14 +113,12 @@ def export_stock(items):
                 "missing_items": missing_items
             }
 
-        # ✅ trừ kho
         for item in items:
             pid = item["product_id"]
             qty = item["quantity"]
 
             stock_map[pid].quantity -= qty
 
-            # 🔥 log lịch sử (StockMovement)
             movement = StockMovement(
                 product_id=pid,
                 change=-qty,
