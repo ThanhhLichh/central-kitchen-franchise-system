@@ -5,17 +5,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database.db import engine
 from app.models.base import Base
 from app.routes.delivery_routes import router as delivery_router
+from app.mq.consumer import start_consumer
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Lúc khởi động server: Khởi tạo bảng trong database
+    # 1. Khởi tạo bảng trong database
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        
-    yield  # Ứng dụng hoạt động và nhận request ở bước này...
-    
-    # 2. Lúc tắt server hoặc Uvicorn reload: Đóng mọi kết nối database an toàn
+
+    # 2. Khởi động RabbitMQ consumer
+    connection = await start_consumer()
+
+    yield
+
+    # 3. Tắt server: đóng kết nối
+    await connection.close()
     await engine.dispose()
 
 
