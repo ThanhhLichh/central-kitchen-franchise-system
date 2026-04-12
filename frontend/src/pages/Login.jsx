@@ -1,11 +1,82 @@
 import "./Login.css";
 import logo from "../assets/logo.png";
 import { FiUser, FiLock } from "react-icons/fi";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { loginApi } from "../api/authApi";
+import { jwtDecode } from "jwt-decode";
 
 function Login() {
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+  });
+
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  //  handle input
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  //  submit login
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login submit");
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await loginApi(formData);
+
+      const token = data.token;
+
+      //  decode JWT
+      const decoded = jwtDecode(token);
+
+      console.log("Decoded:", decoded);
+
+      //  lưu localStorage
+      localStorage.setItem("token", token);
+      localStorage.setItem("expiration", data.expiration || "");
+      localStorage.setItem("role", decoded.role || "");
+      localStorage.setItem("username", decoded.unique_name || "");
+      localStorage.setItem("userId", decoded.UserId || "");
+      localStorage.setItem("storeId", decoded.StoreId || "");
+      localStorage.setItem("locationType", decoded.LocationType || "");
+
+      //  redirect theo role
+      switch (decoded.role) {
+        case "Admin":
+          navigate("/admin");
+          break;
+        case "Manager":
+          navigate("/manager");
+          break;
+        default:
+          navigate("/dashboard");
+          break;
+      }
+    } catch (err) {
+      console.error(err);
+
+      if (err.response?.status === 401) {
+        setError(
+          typeof err.response.data === "string"
+            ? err.response.data
+            : "Sai tài khoản hoặc mật khẩu."
+        );
+      } else {
+        setError("Không thể kết nối tới server.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -26,20 +97,38 @@ function Login() {
 
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="input-wrap">
-            <span className="input-icon"><FiUser /></span>
-            <input type="text" placeholder="Username" />
+            <span className="input-icon">
+              <FiUser />
+            </span>
+            <input
+              type="text"
+              name="username"
+              placeholder="Username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="input-wrap">
-            <span className="input-icon"><FiLock /></span>
-            <input type="password" placeholder="Password" />
+            <span className="input-icon">
+              <FiLock />
+            </span>
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="login-options">
             <label className="remember-switch">
-                <input type="checkbox" />
-                <span className="switch"></span>
-                <span className="label-text">Ghi nhớ</span>
+              <input type="checkbox" />
+              <span className="switch"></span>
+              <span className="label-text">Ghi nhớ</span>
             </label>
 
             <a href="#" className="forgot-link">
@@ -47,8 +136,13 @@ function Login() {
             </a>
           </div>
 
-          <button type="submit" className="login-btn">
-            Log in
+          {/*  Hiển thị lỗi */}
+          {error && (
+            <p style={{ color: "red", fontSize: "14px" }}>{error}</p>
+          )}
+
+          <button type="submit" className="login-btn" disabled={loading}>
+            {loading ? "Đang đăng nhập..." : "Log in"}
           </button>
         </form>
 
