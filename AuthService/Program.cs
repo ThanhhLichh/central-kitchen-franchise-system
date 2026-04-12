@@ -32,7 +32,6 @@ if (File.Exists("firebase-adminsdk.json"))
 {
     FirebaseApp.Create(new AppOptions()
     {
-        // Đảm bảo bạn có file JSON service account từ Firebase Console
         Credential = GoogleCredential.FromFile("firebase-adminsdk.json") 
     });
 }
@@ -66,14 +65,24 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddControllers();
 var app = builder.Build();
 
-// 7. Tự động Apply Migrations khi khởi chạy (Rất hữu ích khi chạy Docker)
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-    db.Database.Migrate(); 
+    var services = scope.ServiceProvider;
+    try
+    {
+        var db = services.GetRequiredService<AuthDbContext>();
+        db.Database.Migrate(); 
+        Console.WriteLine("----> Database đã được cập nhật thành công!");
+
+        await SeedData.InitializeAsync(services);
+        Console.WriteLine("----> Đã tạo thành công 5 Roles và 5 Tài khoản mẫu!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"----> LỖI KHI KHỞI TẠO: {ex.Message}");
+    }
 }
 
-// 8. Kích hoạt Middleware
 app.UseMiddleware<TokenBlacklistMiddleware>();
 
 app.UseAuthentication();

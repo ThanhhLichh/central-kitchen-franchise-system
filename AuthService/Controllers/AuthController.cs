@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -43,7 +44,6 @@ namespace AuthService.Controllers
                     new Claim("LocationType", user.LocationType ?? "")
                 };
                 
-                // Cực kỳ quan trọng: Gắn StoreId vào Token
                 if (user.StoreId.HasValue)
                 {
                     authClaims.Add(new Claim("StoreId", user.StoreId.Value.ToString()));
@@ -60,20 +60,57 @@ namespace AuthService.Controllers
             return Unauthorized("Sai tài khoản hoặc mật khẩu.");
         }
 
+        [HttpPost("create-user")]
+        [Authorize(Roles = "Admin")] 
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
+        {
+            
+            var userExists = await _userManager.FindByNameAsync(request.Username);
+            if (userExists != null)
+            {
+                return BadRequest("Tên đăng nhập này đã tồn tại trong hệ thống.");
+            }
+
+            
+            var newUser = new ApplicationUser
+            {
+                UserName = request.Username,
+                Email = request.Email,
+                FullName = request.FullName,
+                LocationType = request.LocationType,
+                StoreId = request.StoreId,
+                IsActive = true
+            };
+
+            
+            var result = await _userManager.CreateAsync(newUser, request.Password);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest($"Lỗi tạo tài khoản: {errors}");
+            }
+
+            if (!string.IsNullOrEmpty(request.RoleName))
+            {
+                await _userManager.AddToRoleAsync(newUser, request.RoleName);
+            }
+
+            return Ok(new { Message = $"Tạo tài khoản {request.Username} và cấp quyền {request.RoleName} thành công!" });
+        }
+
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
             var jti = User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
             if (jti != null)
             {
-                // Cho Token vào Blacklist Redis với thời gian sống bằng thời gian còn lại của Token
                 await _tokenCache.RevokeTokenAsync(jti, TimeSpan.FromMinutes(120));
             }
             return Ok("Đăng xuất thành công.");
         }
 
-        // Endpoint dành cho Nifi để đồng bộ dữ liệu User (Nifi sẽ gọi API này định kỳ)
         [HttpGet("sync-users")]
+        [Authorize]
         public IActionResult GetUsersForNifi([FromQuery] DateTime lastSyncTime)
         {
             var users = _userManager.Users
@@ -102,4 +139,18 @@ namespace AuthService.Controllers
         public string Username { get; set; }
         public string Password { get; set; }
     }
+
+        public class CreateUserRequest
+    {
+        public string Username { get; set; }
+        public string Password { get; set; }
+        public string Email { get; set; }
+        public string FullName { get; set; }
+        public string LocationType { get; set; } 
+        public Guid? StoreId { get; set; } 
+        public string RoleName { get; set; } 
+    }
+
+
+
 }
