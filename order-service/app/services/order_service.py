@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.order import Order, OrderItem
+from app.mq.publisher import publish_order
 
 
 def handle_create_order(db: Session, order_data):
@@ -21,7 +22,15 @@ def handle_create_order(db: Session, order_data):
         db.add(new_order)
         db.commit()
         db.refresh(new_order)
-
+        #  GỬI MESSAGE QUA RABBITMQ
+        publish_order([
+            {
+                "product_id": item.product_id,
+                "quantity": item.quantity
+            }
+            for item in order_data.items
+        ])
+        
         return {
             "order_id": new_order.id,
             "status": new_order.status

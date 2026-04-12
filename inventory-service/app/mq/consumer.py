@@ -1,53 +1,75 @@
 import pika
 import json
 import os
+import time
 
 from app.services.inventory_service import export_stock
 from app.main import create_app
 
 app = create_app()
 
+
 def callback(ch, method, properties, body):
-    print("Received:", body)
+    print("📩 Received:", body)
 
     try:
         data = json.loads(body)
 
+        if "items" not in data:
+            raise ValueError("Invalid message")
+
         with app.app_context():
             result = export_stock(data["items"])
 
-        print("Result:", result)
+        print("⚙️ Result:", result)
 
-        if result["success"]:
+        # 🔥 tránh retry vô hạn
+        if isinstance(result, tuple):
+            print("❌ Error → ACK to stop retry")
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            return
+
+        if result.get("success"):
+            print("✅ ACK")
             ch.basic_ack(delivery_tag=method.delivery_tag)
         else:
-            print("Business error → retry")
-            ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+            print("❌ Business error → ACK")
+            ch.basic_ack(delivery_tag=method.delivery_tag)
 
     except Exception as e:
-        print("ERROR:", str(e))
-        ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+        print("🔥 ERROR:", str(e))
+        ch.basic_ack(delivery_tag=method.delivery_tag)  # ❗ không retry
 
 
 def start_consumer():
-    host = os.getenv("RABBITMQ_HOST", "localhost")
+    host = os.getenv("RABBITMQ_HOST", "rabbitmq")
 
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host=host)
-    )
+    while True:
+        try:
+            print("🔄 Connecting to RabbitMQ...")
 
-    channel = connection.channel()
+            connection = pika.BlockingConnection(
+                pika.ConnectionParameters(host=host)
+            )
 
-    channel.queue_declare(queue='inventory_queue')
+            print("✅ Connected to RabbitMQ")
 
-    channel.basic_qos(prefetch_count=1)
+            channel = connection.channel()
 
-    channel.basic_consume(
-        queue='inventory_queue',
-        on_message_callback=callback,
-        auto_ack=False
-    )
+            channel.queue_declare(queue='inventory_queue')
 
-    print("Inventory is waiting for messages...")
+            print("🚀 Waiting for messages...")
 
-    channel.start_consuming()
+            channel.basic_qos(prefetch_count=1)
+
+            channel.basic_consume(
+                queue='inventory_queue',
+                on_message_callback=callback,
+                auto_ack=False
+            )
+
+            channel.start_consuming()
+
+        except Exception as e:
+            print("❌ Retry RabbitMQ:", str(e))
+            time.sleep(3)
