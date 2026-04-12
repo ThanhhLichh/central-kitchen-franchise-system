@@ -1,0 +1,6 @@
+# Bỏ qua các thư mục build sinh ra tự động của .NET
+[Bb]in/
+[Oo]bj/
+# Bỏ qua các file cấu hình nhạy cảm chứa mật khẩu (nếu có)
+appsettings.Development.json
+.env
