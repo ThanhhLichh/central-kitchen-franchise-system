@@ -2,7 +2,7 @@ import pika
 import json
 import os
 
-RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 
 
 def publish_order(items):
