@@ -7,19 +7,18 @@ services:
     container_name: mysql_production_service
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-production_db}
+      MYSQL_USER: ${MYSQL_USER:-devuser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-devpassword}
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
-      - ./init-db:/docker-entrypoint-initdb.d   # Đặt file .sql khởi tạo DB vào đây (nếu có)
     networks:
       - production_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,11 +34,10 @@ services:
       - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
-      # Dùng tên service "production-db" thay vì localhost
-      - ConnectionStrings__DefaultConnection=Server=production-db;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};
+      - ConnectionStrings__DefaultConnection=Server=production-db;Port=3306;Database=${MYSQL_DATABASE:-production_db};User=${MYSQL_USER:-devuser};Password=${MYSQL_PASSWORD:-devpassword};
     depends_on:
       production-db:
-        condition: service_healthy   # Chờ MySQL healthy mới khởi động API
+        condition: service_healthy
     networks:
       - production_network
 

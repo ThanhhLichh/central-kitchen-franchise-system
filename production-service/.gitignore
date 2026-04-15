@@ -8,11 +8,11 @@ TestResults/
 
 # ===== ASP.NET Core =====
 appsettings.Development.json
-appsettings.Production.json    # Chứa connection string production - không push!
+appsettings.Production.json
 wwwroot/lib/
 
 # ===== Docker / Environment =====
-.env                           # File chứa mật khẩu thật - KHÔNG BAO GIỜ push!
+.env
 
 # ===== OS =====
 .DS_Store
