@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # 1. Khởi tạo SQL Server
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: franchise_sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Your_Strong_Password123! 
+    ports:
+      - "1433:1433" 
+    volumes:
+      - sqlvolume:/var/opt/mssql 
+
+  # 2. Khởi tạo Redis Cache
+  redis:
+    image: redis:alpine
+    container_name: franchise_redis
+    ports:
+      - "6379:6379"
+
+  # 3. Khởi tạo AuthService của bạn
+  authservice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: franchise_authservice
+    ports:
+      - "8080:8080"
+    depends_on:
+      - sqlserver
+      - redis
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=FranchiseAuthDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True;
+      
+      - ConnectionStrings__RedisCache=redis:6379
+
+
+volumes:
+  sqlvolume:

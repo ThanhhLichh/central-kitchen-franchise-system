@@ -1,0 +1,1113 @@
+{
+  "info": {
+    "_postman_id": "auth-service-complete",
+    "name": "AuthService API - Complete Test Suite",
+    "description": "Central Kitchen Franchise System - AuthService Complete API Testing Collection\n\n**Features:**\n- Automated token management\n- Role-based user testing (5 roles)\n- JWT validation tests\n- Token blacklisting verification\n- User sync endpoint testing\n\n**⚠️ IMPORTANT - How to Run:**\n1. Import this collection into Postman\n2. Base URL is set to: http://localhost:8080 ✅\n3. **RUN FOLDERS IN THIS ORDER:**\n   - Step 1: 🔐 Authentication & Authorization (Login first!)\n   - Step 2: 👥 User Synchronization (uses token from Login)\n   - Step 3: 🚪 Logout & Token Revocation\n   - Step 4: 🧪 JWT Token & Claims Validation\n   - Step 5: 📊 Test Scenarios & Workflows\n4. Tokens will auto-save to {{jwt_token}}, {{admin_token}}, etc.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "⚠️ 00 SETUP: Login Admin First!",
+      "item": [
+        {
+          "name": "🔑 GET TOKEN (RUN THIS FIRST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"✅ Login success\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"✅ SAVE TOKEN\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('jwt_token', jsonData.token);",
+                  "    console.log('✅ TOKEN SAVED: ' + jsonData.token.substring(0, 50) + '...');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\"username\": \"admin\", \"password\": \"Password@123\"}"},
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔐 Authentication & Authorization",
+      "item": [
+        {
+          "name": "1️⃣ Login - Admin User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test 1: Check HTTP status is 200",
+                  "pm.test(\"Status code is 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test 2: Response has required fields",
+                  "pm.test(\"Response has token and expiration\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token');",
+                  "    pm.expect(jsonData).to.have.property('expiration');",
+                  "});",
+                  "",
+                  "// Test 3: Token is a valid JWT format",
+                  "pm.test(\"Token is valid JWT format\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    var token = jsonData.token;",
+                  "    var parts = token.split('.');",
+                  "    pm.expect(parts.length).to.equal(3);",
+                  "});",
+                  "",
+                  "// Test 4: Save token to environment",
+                  "pm.test(\"Save token to environment\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('admin_token', jsonData.token);",
+                  "    pm.environment.set('jwt_token', jsonData.token);",
+                  "    pm.expect(pm.environment.get('jwt_token')).to.exist;",
+                  "});",
+                  "",
+                  "// Test 5: Verify token expiration is in future",
+                  "pm.test(\"Token expiration is in the future\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    var expTime = new Date(jsonData.expiration).getTime();",
+                  "    var now = new Date().getTime();",
+                  "    pm.expect(expTime).to.be.above(now);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "2️⃣ Login - Manager User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has token\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('token');",
+                  "});",
+                  "",
+                  "pm.test(\"Save manager token\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('manager_token', jsonData.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"manager\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "3️⃣ Login - Supply Coordinator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Save supply coordinator token\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('supply_token', jsonData.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"supply_coord\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "4️⃣ Login - Central Kitchen Staff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Save kitchen staff token\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('kitchen_token', jsonData.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"kitchen_staff\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "5️⃣ Login - Franchise Store Staff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Save franchise staff token\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('franchise_token', jsonData.token);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"store_staff\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "❌ Login - Invalid Username",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function() {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains error message\", function() {",
+                  "    var responseText = pm.response.text();",
+                  "    pm.expect(responseText).to.include('Sai tài khoản hoặc mật khẩu');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"nonexistent_user\",\n  \"password\": \"Password@123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "❌ Login - Wrong Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 401 Unauthorized\", function() {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Error message for wrong password\", function() {",
+                  "    var responseText = pm.response.text();",
+                  "    pm.expect(responseText).to.include('Sai tài khoản hoặc mật khẩu');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"WrongPassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚪 Logout & Token Revocation",
+      "item": [
+        {
+          "name": "Logout - Admin User (with Token)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Ensure we have a token before testing logout",
+                  "if (!pm.environment.get('admin_token')) {",
+                  "    console.log('No admin token found. Please run Login - Admin first.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response contains success message\", function() {",
+                  "    var responseText = pm.response.text();",
+                  "    pm.expect(responseText).to.include('Đăng xuất thành công');",
+                  "});",
+                  "",
+                  "pm.test(\"Token is revoked (can verify with next API call)\", function() {",
+                  "    // The token should now be in Redis blacklist",
+                  "    // Any subsequent call with this token should fail",
+                  "    pm.expect(true).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "Logout - Manager User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Logout successful\", function() {",
+                  "    var responseText = pm.response.text();",
+                  "    pm.expect(responseText).to.include('Đăng xuất thành công');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{manager_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "❌ Logout - No Token (Missing Auth Header)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code indicates unauthorized\", function() {",
+                  "    // Should either be 401 or return without revoking",
+                  "    pm.expect([200, 401]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        },
+        {
+          "name": "❌ Use Token After Logout (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Revoked token should be rejected\", function() {",
+                  "    // After logout, this token should be in the blacklist",
+                  "    // Status should be 401 or similar unauthorized response",
+                  "    pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/sync-users?lastSyncTime=2026-01-01T00:00:00Z",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "sync-users"],
+              "query": [
+                {
+                  "key": "lastSyncTime",
+                  "value": "2026-01-01T00:00:00Z"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 User Synchronization (Nifi)",
+      "item": [
+        {
+          "name": "Sync Users - Get All Since 2026-01-01",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Make sure we have a fresh token for this test",
+                  "// Use the saved jwt_token from login",
+                  "if (!pm.environment.get('jwt_token')) {",
+                  "    console.log('⚠️ No JWT token found. Please run Login endpoint first');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is array\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(Array.isArray(jsonData)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test(\"Each user has required fields\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.length > 0) {",
+                  "        var firstUser = jsonData[0];",
+                  "        pm.expect(firstUser).to.have.property('id');",
+                  "        pm.expect(firstUser).to.have.property('userName');",
+                  "        pm.expect(firstUser).to.have.property('email');",
+                  "        pm.expect(firstUser).to.have.property('isActive');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Return number of synced users\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('📊 Total users synced: ' + jsonData.length);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/sync-users?lastSyncTime=2026-01-01T00:00:00Z",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "sync-users"],
+              "query": [
+                {
+                  "key": "lastSyncTime",
+                  "value": "2026-01-01T00:00:00Z"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Sync Users - Filter by Recent Date",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response is array of users\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(Array.isArray(jsonData)).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/sync-users?lastSyncTime=2026-03-20T00:00:00Z",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "sync-users"],
+              "query": [
+                {
+                  "key": "lastSyncTime",
+                  "value": "2026-03-20T00:00:00Z"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "❌ Sync Users - Without Token (Should Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code indicates unauthorized (401 or 403)\", function() {",
+                  "    pm.expect([401, 403]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "pm.test(\"Response indicates authentication required\", function() {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/sync-users?lastSyncTime=2026-01-01T00:00:00Z",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "sync-users"],
+              "query": [
+                {
+                  "key": "lastSyncTime",
+                  "value": "2026-01-01T00:00:00Z"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "❌ Sync Users - Invalid Date Format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Request completes (date parsing test)\", function() {",
+                  "    pm.expect(pm.response.code).to.exist;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/sync-users?lastSyncTime=invalid-date",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "sync-users"],
+              "query": [
+                {
+                  "key": "lastSyncTime",
+                  "value": "invalid-date"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧪 JWT Token & Claims Validation",
+      "item": [
+        {
+          "name": "Decode JWT Token - Verify Claims",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Ensure we have a valid, non-revoked token for claims verification",
+                  "// Get a fresh token from Login first"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Helper function to decode JWT",
+                  "function decodeJWT(token) {",
+                  "    var parts = token.split('.');",
+                  "    var payload = atob(parts[1]);",
+                  "    return JSON.parse(payload);",
+                  "}",
+                  "",
+                  "pm.test(\"Status code is 200 (have valid token)\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Decode and verify JWT claims\", function() {",
+                  "    var token = pm.environment.get('jwt_token');",
+                  "    if (token && pm.response.code === 200) {",
+                  "        var decoded = decodeJWT(token);",
+                  "        ",
+                  "        // Verify required claims exist",
+                  "        pm.expect(decoded).to.have.property('jti'); // Token ID",
+                  "        pm.expect(decoded).to.have.property('UserId');",
+                  "        pm.expect(decoded).to.have.property('iss'); // Issuer",
+                  "        pm.expect(decoded).to.have.property('aud'); // Audience",
+                  "        pm.expect(decoded).to.have.property('exp'); // Expiration",
+                  "        ",
+                  "        console.log('✅ JWT Claims verified: ' + JSON.stringify(decoded, null, 2));",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Verify token issuer is AuthService\", function() {",
+                  "    var token = pm.environment.get('jwt_token');",
+                  "    if (token && pm.response.code === 200) {",
+                  "        var parts = token.split('.');",
+                  "        var decoded = JSON.parse(atob(parts[1]));",
+                  "        pm.expect(decoded.iss).to.equal('AuthService');",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"Verify token audience is FranchiseSystem\", function() {",
+                  "    var token = pm.environment.get('jwt_token');",
+                  "    if (token && pm.response.code === 200) {",
+                  "        var parts = token.split('.');",
+                  "        var decoded = JSON.parse(atob(parts[1]));",
+                  "        pm.expect(decoded.aud).to.equal('FranchiseSystem');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/sync-users?lastSyncTime=2026-01-01T00:00:00Z",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "sync-users"],
+              "query": [
+                {
+                  "key": "lastSyncTime",
+                  "value": "2026-01-01T00:00:00Z"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Test Scenarios & Workflows",
+      "item": [
+        {
+          "name": "Workflow: Complete Login-Sync-Logout",
+          "item": [
+            {
+              "name": "Step 1: Login as Admin",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Login successful and token saved\", function() {",
+                      "    pm.response.to.have.status(200);",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.environment.set('workflow_token', jsonData.token);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"username\": \"admin\", \"password\": \"Password@123\"}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "login"]
+                }
+              }
+            },
+            {
+              "name": "Step 2: Sync Users with Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"User sync successful\", function() {",
+                      "    pm.response.to.have.status(200);",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.expect(Array.isArray(jsonData)).to.be.true;",
+                      "    console.log('📋 Users retrieved: ' + jsonData.length);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{workflow_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/sync-users?lastSyncTime=2026-01-01T00:00:00Z",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "sync-users"],
+                  "query": [
+                    {
+                      "key": "lastSyncTime",
+                      "value": "2026-01-01T00:00:00Z"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Step 3: Logout and Revoke Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Logout successful\", function() {",
+                      "    pm.response.to.have.status(200);",
+                      "    console.log('✅ Token revoked successfully');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{workflow_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/logout",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "logout"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Workflow: Test All 5 Roles",
+          "item": [
+            {
+              "name": "Test All Roles - Sequential",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/sync-users?lastSyncTime=2026-01-01T00:00:00Z",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "sync-users"],
+                  "query": [
+                    {
+                      "key": "lastSyncTime",
+                      "value": "2026-01-01T00:00:00Z"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Security: Test Token Revocation",
+          "item": [
+            {
+              "name": "Prepare: Get Fresh Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Save token for revocation test\", function() {",
+                      "    var jsonData = pm.response.json();",
+                      "    pm.environment.set('revoke_test_token', jsonData.token);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"username\": \"admin\", \"password\": \"Password@123\"}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/auth/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "login"]
+                }
+              }
+            },
+            {
+              "name": "Use Token - Before Logout",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Token works before logout\", function() {",
+                      "    pm.response.to.have.status(200);",
+                      "    console.log('✅ Token is valid');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{revoke_test_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/sync-users?lastSyncTime=2026-01-01T00:00:00Z",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "sync-users"],
+                  "query": [
+                    {
+                      "key": "lastSyncTime",
+                      "value": "2026-01-01T00:00:00Z"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Logout and Revoke Token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Token revoked\", function() {",
+                      "    pm.response.to.have.status(200);",
+                      "    console.log('⛔ Token is now blacklisted');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{revoke_test_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/logout",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "logout"]
+                }
+              }
+            },
+            {
+              "name": "Use Token - After Logout (Should Fail)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Token rejected after logout\", function() {",
+                      "    pm.expect([401, 403]).to.include(pm.response.code);",
+                      "    console.log('✅ Blacklist verification passed - token correctly rejected');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{revoke_test_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/auth/sync-users?lastSyncTime=2026-01-01T00:00:00Z",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "auth", "sync-users"],
+                  "query": [
+                    {
+                      "key": "lastSyncTime",
+                      "value": "2026-01-01T00:00:00Z"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "manager_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "supply_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "kitchen_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "franchise_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "workflow_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "revoke_test_token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

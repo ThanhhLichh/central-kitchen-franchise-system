@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # ===== MySQL Database =====
+  production-db:
+    image: mysql:8.0
+    container_name: mysql_production_service
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init-db:/docker-entrypoint-initdb.d   # Đặt file .sql khởi tạo DB vào đây (nếu có)
+    networks:
+      - production_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== ASP.NET Core API =====
+  production-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: production_api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      # Dùng tên service "production-db" thay vì localhost
+      - ConnectionStrings__DefaultConnection=Server=production-db;Port=3306;Database=${MYSQL_DATABASE};User=${MYSQL_USER};Password=${MYSQL_PASSWORD};
+    depends_on:
+      production-db:
+        condition: service_healthy   # Chờ MySQL healthy mới khởi động API
+    networks:
+      - production_network
+
+# ===== Volumes =====
+volumes:
+  db_data:
+    driver: local
+
+# ===== Network =====
+networks:
+  production_network:
+    driver: bridge

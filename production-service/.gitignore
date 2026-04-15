@@ -1,0 +1,24 @@
+# ===== .NET Build Output =====
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# ===== ASP.NET Core =====
+appsettings.Development.json
+appsettings.Production.json    # Chứa connection string production - không push!
+wwwroot/lib/
+
+# ===== Docker / Environment =====
+.env                           # File chứa mật khẩu thật - KHÔNG BAO GIỜ push!
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== IDE =====
+.idea/
+*.swp

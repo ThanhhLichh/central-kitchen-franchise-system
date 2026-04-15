@@ -1,0 +1,31 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Environment secrets - KHÔNG bao giờ commit .env thật
+.env
+.env.*
+!.env.example
+
+# Database migrations (tuỳ chọn - bỏ comment nếu không muốn include)
+# Migrations/
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker-compose.override.yml
+
+# Git
+.git/
+.gitignore
+.gitkeep
+
+# README và docs (không cần trong image)
+*.md

@@ -1,0 +1,119 @@
+from fastapi import HTTPException
+from sqlalchemy.orm import Session, selectinload
+
+from app.models.order import Order, OrderItem
+from app.mq.publisher import publish_order
+
+
+def handle_create_order(db: Session, order_data):
+    try:
+        new_order = Order(
+            store_id=order_data.store_id,
+            status="pending"
+        )
+
+        for item in order_data.items:
+            new_item = OrderItem(
+                product_id=item.product_id,
+                quantity=item.quantity
+            )
+            new_order.items.append(new_item)
+
+        db.add(new_order)
+        db.commit()
+        db.refresh(new_order)
+        #  GỬI MESSAGE QUA RABBITMQ
+        publish_order([
+            {
+                "product_id": item.product_id,
+                "quantity": item.quantity
+            }
+            for item in order_data.items
+        ])
+        
+        return {
+            "order_id": new_order.id,
+            "status": new_order.status
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Create order failed: {str(e)}")
+
+
+def handle_get_orders(db: Session):
+    try:
+        orders = (
+            db.query(Order)
+            .options(selectinload(Order.items))
+            .order_by(Order.created_at.desc())
+            .all()
+        )
+        return orders
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Get orders failed: {str(e)}")
+
+
+def handle_get_order_by_id(db: Session, order_id: int):
+    try:
+        order = (
+            db.query(Order)
+            .options(selectinload(Order.items))
+            .filter(Order.id == order_id)
+            .first()
+        )
+
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        return order
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Get order failed: {str(e)}")
+
+
+def handle_update_order_status(db: Session, order_id: int, new_status: str):
+    try:
+        order = db.query(Order).filter(Order.id == order_id).first()
+
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+
+        allowed_transitions = {
+            "pending": ["processing"],
+            "processing": ["completed"],
+            "completed": []
+        }
+
+        current_status = order.status
+
+        if new_status == current_status:
+            return {
+                "message": "Order status unchanged",
+                "order_id": order.id,
+                "status": order.status
+            }
+
+        if new_status not in allowed_transitions[current_status]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid status transition from '{current_status}' to '{new_status}'"
+            )
+
+        order.status = new_status
+        db.commit()
+        db.refresh(order)
+
+        return {
+            "message": "Order status updated successfully",
+            "order_id": order.id,
+            "status": order.status
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Update status failed: {str(e)}")
