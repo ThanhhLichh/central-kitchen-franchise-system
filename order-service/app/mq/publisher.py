@@ -4,7 +4,6 @@ import os
 
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 
-
 def publish_order(items):
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(host=RABBITMQ_HOST)
@@ -12,7 +11,7 @@ def publish_order(items):
 
     channel = connection.channel()
 
-    channel.queue_declare(queue='inventory_queue')
+    channel.queue_declare(queue='inventory_queue', durable=True)
 
     message = {
         "items": items
@@ -21,7 +20,8 @@ def publish_order(items):
     channel.basic_publish(
         exchange='',
         routing_key='inventory_queue',
-        body=json.dumps(message)
+        body=json.dumps(message),
+        properties=pika.BasicProperties(delivery_mode=2)
     )
 
     print("Sent to inventory:", message)
