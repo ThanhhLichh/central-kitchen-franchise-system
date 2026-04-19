@@ -7,6 +7,7 @@ namespace AuthService.Data
     public class AuthDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
     {
         public AuthDbContext(DbContextOptions<AuthDbContext> options) : base(options) { }
+        public DbSet<Store> Stores => Set<Store>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -25,6 +26,12 @@ namespace AuthService.Data
                 new ApplicationRole { Id = storeStaffRoleId, Name = "FranchiseStoreStaff", NormalizedName = "FRANCHISESTORESTAFF" },
                 new ApplicationRole { Id = supplyCoordRoleId, Name = "SupplyCoordinator", NormalizedName = "SUPPLYCOORDINATOR" }
             );
+
+            builder.Entity<ApplicationUser>()
+                .HasOne(u => u.Store)
+                .WithMany()
+                .HasForeignKey(u => u.StoreId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using AuthService.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace AuthService.Data
 {
@@ -9,6 +10,28 @@ namespace AuthService.Data
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
             var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var dbContext = serviceProvider.GetRequiredService<AuthDbContext>();
+            var kitchenStoreId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+            var franchiseStoreId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+
+            if (!await dbContext.Stores.AnyAsync())
+            {
+                dbContext.Stores.AddRange(
+                    new Store
+                    {
+                        Id = kitchenStoreId,
+                        Name = "Central Kitchen 1",
+                        Address = "District 1, Ho Chi Minh City"
+                    },
+                    new Store
+                    {
+                        Id = franchiseStoreId,
+                        Name = "Franchise Store 1",
+                        Address = "District 3, Ho Chi Minh City"
+                    }
+                );
+                await dbContext.SaveChangesAsync();
+            }
 
             
             string[] roleNames = { 
@@ -87,7 +110,7 @@ namespace AuthService.Data
                     Email = "kitchen1@system.com",
                     FullName = "Nhân Viên Bếp Trung Tâm 1",
                     LocationType = "CentralKitchen",
-                    StoreId = Guid.NewGuid(), 
+                    StoreId = kitchenStoreId, 
                     IsActive = true
                 };
                 if ((await userManager.CreateAsync(kitchenUser, "Password@123")).Succeeded)
@@ -105,7 +128,7 @@ namespace AuthService.Data
                     Email = "store1@system.com",
                     FullName = "Nhân Viên Cửa Hàng 1",
                     LocationType = "FranchiseStore",
-                    StoreId = Guid.NewGuid(), 
+                    StoreId = franchiseStoreId, 
                     IsActive = true
                 };
                 if ((await userManager.CreateAsync(storeUser, "Password@123")).Succeeded)
