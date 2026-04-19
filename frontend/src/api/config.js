@@ -1,10 +1,29 @@
-//  LOAD ENV
-const AUTH_BASE_URL = import.meta.env.VITE_AUTH_API;
+const GATEWAY_BASE_URL = import.meta.env.VITE_API_GATEWAY;
 
-//  AUTH API
 export const AUTH_API = {
-  LOGIN: `${AUTH_BASE_URL}/login`,
-  LOGOUT: `${AUTH_BASE_URL}/logout`,
-  CREATE_USER: `${AUTH_BASE_URL}/create-user`,
-  SYNC_USERS: `${AUTH_BASE_URL}/sync-users`,
+  LOGIN: `${GATEWAY_BASE_URL}/api/auth/login`,
+  LOGOUT: `${GATEWAY_BASE_URL}/api/auth/logout`,
+  CREATE_USER: `${GATEWAY_BASE_URL}/api/auth/create-user`,
+  SYNC_USERS: `${GATEWAY_BASE_URL}/api/auth/sync-users`,
+};
+
+export const ORDER_API = {
+  GET_ALL: `${GATEWAY_BASE_URL}/orders`,
+  GET_BY_ID: (id) => `${GATEWAY_BASE_URL}/orders/${id}`,
+  CREATE: `${GATEWAY_BASE_URL}/orders`,
+  UPDATE_STATUS: (id) => `${GATEWAY_BASE_URL}/orders/${id}/status`,
+};
+
+export const INVENTORY_API = {
+  GET_ALL: `${GATEWAY_BASE_URL}/inventory`,
+  CHECK_STOCK: `${GATEWAY_BASE_URL}/check-stock`,
+};
+
+export const DELIVERY_API = {
+  GET_ALL: `${GATEWAY_BASE_URL}/deliveries`,
+};
+
+export const PRODUCTION_API = {
+  GET_PLAN: `${GATEWAY_BASE_URL}/production-plan`,
+  GET_STATUS: `${GATEWAY_BASE_URL}/production-status`,
 };

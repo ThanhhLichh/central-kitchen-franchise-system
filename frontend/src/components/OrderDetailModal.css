@@ -1,0 +1,147 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 20px;
+}
+
+.order-modal {
+  width: 100%;
+  max-width: 820px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+  padding: 24px;
+  animation: fadeInUp 0.2s ease;
+}
+
+.order-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.order-modal-header h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.order-modal-header p {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.close-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: #f3f4f6;
+  color: #111827;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.order-modal-info {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.info-card {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-card span {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.info-card strong {
+  font-size: 15px;
+  color: #111827;
+}
+
+.status-text.pending {
+  color: #b45309;
+}
+
+.status-text.processing {
+  color: #1d4ed8;
+}
+
+.status-text.completed {
+  color: #15803d;
+}
+
+.order-modal-table-wrap h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.order-modal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.order-modal-table th,
+.order-modal-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.order-modal-table th {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.empty-row {
+  text-align: center;
+  color: #94a3b8;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 900px) {
+  .order-modal-info {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .order-modal {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .order-modal-info {
+    grid-template-columns: 1fr;
+  }
+}

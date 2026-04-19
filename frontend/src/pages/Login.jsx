@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginApi } from "../api/authApi";
 import { jwtDecode } from "jwt-decode";
+import { getDefaultRouteByRole } from "../utils/getDefaultRouteByRole";
 
 function Login() {
   const navigate = useNavigate();
@@ -27,57 +28,54 @@ function Login() {
 
   //  submit login
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    try {
-      const data = await loginApi(formData);
+  try {
+    const data = await loginApi(formData);
 
-      const token = data.token;
+    const token = data.token;
+    const decoded = jwtDecode(token);
 
-      //  decode JWT
-      const decoded = jwtDecode(token);
+    console.log("Decoded:", decoded);
 
-      console.log("Decoded:", decoded);
+    const role =
+      decoded.role ||
+      decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+      "";
 
-      //  lưu localStorage
-      localStorage.setItem("token", token);
-      localStorage.setItem("expiration", data.expiration || "");
-      localStorage.setItem("role", decoded.role || "");
-      localStorage.setItem("username", decoded.unique_name || "");
-      localStorage.setItem("userId", decoded.UserId || "");
-      localStorage.setItem("storeId", decoded.StoreId || "");
-      localStorage.setItem("locationType", decoded.LocationType || "");
+    const username =
+      decoded.unique_name ||
+      decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] ||
+      "";
 
-      //  redirect theo role
-      switch (decoded.role) {
-        case "Admin":
-          navigate("/admin");
-          break;
-        case "Manager":
-          navigate("/manager");
-          break;
-        default:
-          navigate("/dashboard");
-          break;
-      }
-    } catch (err) {
-      console.error(err);
+    localStorage.setItem("token", token);
+    localStorage.setItem("expiration", data.expiration || "");
+    localStorage.setItem("role", role);
+    localStorage.setItem("username", username);
+    localStorage.setItem("userId", decoded.UserId || "");
+    localStorage.setItem("storeId", decoded.StoreId || "");
+    localStorage.setItem("locationType", decoded.LocationType || "");
+    localStorage.setItem("fullName", decoded.FullName || "");
 
-      if (err.response?.status === 401) {
-        setError(
-          typeof err.response.data === "string"
-            ? err.response.data
-            : "Sai tài khoản hoặc mật khẩu."
-        );
-      } else {
-        setError("Không thể kết nối tới server.");
-      }
-    } finally {
-      setLoading(false);
+       navigate(getDefaultRouteByRole(role));
+  } catch (err) {
+    console.error(err);
+
+    if (err.response?.status === 401) {
+      setError(
+        typeof err.response.data === "string"
+          ? err.response.data
+          : "Sai tài khoản hoặc mật khẩu."
+      );
+    } else {
+      setError("Không thể kết nối tới server.");
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="login-page">
