@@ -17,7 +17,6 @@ class OrderItemCreate(BaseModel):
 
 
 class OrderCreate(BaseModel):
-    store_id: int = Field(..., gt=0)
     items: List[OrderItemCreate] = Field(..., min_length=1)
 
 
@@ -33,7 +32,8 @@ class OrderResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    store_id: int
+    store_id: str
+    created_by: str | None = None
     status: OrderStatus
     created_at: datetime
     items: List[OrderItemResponse]
