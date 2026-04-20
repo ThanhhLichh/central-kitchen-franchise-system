@@ -91,32 +91,18 @@ namespace AuthService.Controllers
                 return BadRequest("Tên đăng nhập này đã tồn tại trong hệ thống.");
             }
 
-            Guid? storeId = request.StoreId;
             var isStoreStaff = string.Equals(request.RoleName, "FranchiseStoreStaff", StringComparison.OrdinalIgnoreCase);
             if (isStoreStaff)
             {
-                if (storeId.HasValue)
+                if (!request.StoreId.HasValue)
                 {
-                    var storeExists = await _dbContext.Stores.AnyAsync(s => s.Id == storeId.Value);
-                    if (!storeExists)
-                    {
-                        return BadRequest("StoreId không tồn tại.");
-                    }
+                    return BadRequest("Nhân viên cửa hàng (FranchiseStoreStaff) bắt buộc phải có StoreId.");
                 }
-                else if (!string.IsNullOrWhiteSpace(request.StoreName))
+
+                var storeExists = await _dbContext.Stores.AnyAsync(s => s.Id == request.StoreId.Value);
+                if (!storeExists)
                 {
-                    var newStore = new Store
-                    {
-                        Name = request.StoreName.Trim(),
-                        Address = request.StoreAddress?.Trim() ?? string.Empty
-                    };
-                    _dbContext.Stores.Add(newStore);
-                    await _dbContext.SaveChangesAsync();
-                    storeId = newStore.Id;
-                }
-                else
-                {
-                    return BadRequest("Nhân viên cửa hàng phải có StoreId hoặc StoreName.");
+                    return BadRequest("StoreId không tồn tại.");
                 }
             }
             
@@ -126,7 +112,7 @@ namespace AuthService.Controllers
                 Email = request.Email,
                 FullName = request.FullName,
                 LocationType = request.LocationType,
-                StoreId = storeId,
+                StoreId = request.StoreId,
                 IsActive = true
             };
 
@@ -143,10 +129,6 @@ namespace AuthService.Controllers
                 await _userManager.AddToRoleAsync(newUser, request.RoleName);
             }
 
-            var createdStoreName = storeId.HasValue
-                ? await _dbContext.Stores.Where(s => s.Id == storeId.Value).Select(s => s.Name).FirstOrDefaultAsync()
-                : null;
-
             return Ok(new
             {
                 Message = $"Tạo tài khoản {request.Username} và cấp quyền {request.RoleName} thành công!",
@@ -154,8 +136,7 @@ namespace AuthService.Controllers
                 newUser.UserName,
                 newUser.Email,
                 newUser.FullName,
-                newUser.StoreId,
-                StoreName = createdStoreName
+                newUser.StoreId
             });
         }
 
@@ -206,6 +187,35 @@ namespace AuthService.Controllers
             }
 
             return Ok(response);
+        }
+
+        [HttpGet("users/{id:guid}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetUserById(Guid id)
+        {
+            var user = await _userManager.Users
+                .Include(u => u.Store)
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null) return NotFound("Không tìm thấy user.");
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new
+            {
+                user.Id,
+                user.UserName,
+                user.Email,
+                user.FullName,
+                user.LocationType,
+                user.StoreId,
+                StoreName = user.Store?.Name,
+                StoreAddress = user.Store?.Address,
+                user.IsActive,
+                Roles = roles,
+                user.CreatedAt,
+                user.UpdatedAt
+            });
         }
 
         [HttpPut("users/{id:guid}")]
@@ -301,8 +311,6 @@ namespace AuthService.Controllers
         public string FullName { get; set; } = string.Empty;
         public string LocationType { get; set; } = string.Empty;
         public Guid? StoreId { get; set; }
-        public string? StoreName { get; set; }
-        public string? StoreAddress { get; set; }
         public string RoleName { get; set; } = string.Empty;
     }
 
