@@ -2,6 +2,7 @@ export const menuByRole = {
   Admin: [
     { label: "Tổng quan", path: "/admin" },
     { label: "Người dùng", path: "/admin/users" },
+    { label: "Cửa hàng", path: "/admin/stores" },
   ],
 
   Manager: [

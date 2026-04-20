@@ -4,6 +4,8 @@ import Dashboard from "../pages/Dashboard";
 import PrivateRoute from "./PrivateRoute";
 import { getDefaultRouteByRole } from "../utils/getDefaultRouteByRole";
 import OrdersPage from "../pages/OrdersPage";
+import AdminUsersPage from "../pages/AdminUsersPage";
+import StoresPage from "../pages/StoresPage";
 
 function AppRoutes() {
   const token = localStorage.getItem("token");
@@ -36,6 +38,22 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <PrivateRoute>
+            <AdminUsersPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin/stores"
+        element={
+          <PrivateRoute>
+            <StoresPage />
           </PrivateRoute>
         }
       />

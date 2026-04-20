@@ -6,6 +6,7 @@ function Navbar() {
   const role = localStorage.getItem("role");
   const fullName = localStorage.getItem("fullName");
   const storeId = localStorage.getItem("storeId");
+  const storeName = localStorage.getItem("storeName");
   const roleDisplayMap = {
       Admin: "Quản trị",
       Manager: "Quản lý",
@@ -31,7 +32,7 @@ function Navbar() {
 
             {role === "FranchiseStoreStaff" && (
               <span className="store">
-                • Store: {storeId?.slice(0, 6) || "N/A"}
+                • Store: {storeName || "N/A"}
               </span>
             )}
           </div>

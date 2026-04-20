@@ -11,6 +11,7 @@ function Dashboard() {
   const role = localStorage.getItem("role");
   const fullName = localStorage.getItem("fullName") || localStorage.getItem("username");
   const storeId = localStorage.getItem("storeId");
+  const storeName = localStorage.getItem("storeName");
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,9 +68,9 @@ function Dashboard() {
             <h1 className="dashboard-title">Tổng quan cửa hàng</h1>
             <p className="dashboard-subtitle">
               Xin chào <strong>{fullName}</strong>
-              {role === "FranchiseStoreStaff" && storeId ? (
-                <> • Mã cửa hàng: {storeId.slice(0, 8)}</>
-              ) : null}
+              {role === "FranchiseStoreStaff" && storeName ? (
+              <> • Cửa hàng: {storeName}</>
+            ) : null}
             </p>
           </div>
 

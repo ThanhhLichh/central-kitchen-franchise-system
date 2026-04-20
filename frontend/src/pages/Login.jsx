@@ -58,6 +58,7 @@ function Login() {
     localStorage.setItem("storeId", decoded.StoreId || "");
     localStorage.setItem("locationType", decoded.LocationType || "");
     localStorage.setItem("fullName", decoded.FullName || "");
+    localStorage.setItem("storeName", decoded.StoreName || "");
 
        navigate(getDefaultRouteByRole(role));
   } catch (err) {

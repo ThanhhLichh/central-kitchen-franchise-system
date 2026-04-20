@@ -1,0 +1,55 @@
+.stores-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.stores-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stores-top h1 {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Button */
+.primary-btn {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+thead {
+  background: #f3f4f6;
+}
+
+th, td {
+  padding: 14px;
+  text-align: left;
+}
+
+tr {
+  border-bottom: 1px solid #eee;
+}
+
+td {
+  color: #111827;
+}
