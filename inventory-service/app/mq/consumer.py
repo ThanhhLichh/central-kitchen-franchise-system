@@ -41,7 +41,11 @@ def start_consumer(app):
                     data = json.loads(body)
 
                     with app.app_context():
-                        result = export_stock(data['items'])
+                        result = export_stock(
+                            data['items'], 
+                            location_type="central_kitchen", 
+                            store_id=None
+                        )
 
                     print("Exported:", result, flush=True)
 

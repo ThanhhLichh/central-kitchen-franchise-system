@@ -19,3 +19,11 @@ def import_stock():
 @inventory_bp.route("/inventory/export", methods=["POST"])
 def export_stock():
     return export_stock_controller()
+
+@inventory_bp.route("/inventory/store/<store_id>", methods=["GET"])
+def get_store_inventory(store_id):
+    return get_store_inventory_controller(store_id)
+
+@inventory_bp.route("/inventory/store/import", methods=["POST"])
+def import_store_stock():
+    return import_store_stock_controller()
