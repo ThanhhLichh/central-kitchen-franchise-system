@@ -9,6 +9,9 @@ import {
   FiSettings,
   FiPlusCircle,
   FiArchive,
+  FiShoppingBag,
+  FiPackage,
+  FiEdit3,
 } from "react-icons/fi";
 import logo from "../assets/logo.png";
 import "./Sidebar.css";
@@ -16,13 +19,22 @@ import "./Sidebar.css";
 const iconMap = {
   "Tổng quan": <FiHome />,
   "Đơn hàng": <FiShoppingCart />,
+  "Đơn hàng cần xử lý": <FiShoppingCart />,
   "Tạo đơn mới": <FiPlusCircle />,
+
   "Tồn kho bếp trung tâm": <FiArchive />,
+  "Tồn kho cửa hàng": <FiArchive />,
   "Kho & Nguyên liệu": <FiArchive />,
+  "Kho trung tâm": <FiArchive />,
+
+  "Sản xuất": <FiPackage />,
+  "Cập nhật trạng thái": <FiEdit3 />,
+
   "Người dùng": <FiUsers />,
   "Báo cáo": <FiBarChart2 />,
   "Giao hàng": <FiTruck />,
   "Cấu hình hệ thống": <FiSettings />,
+  "Cửa hàng": <FiShoppingBag />,
 };
 
 function Sidebar() {

@@ -1,14 +1,11 @@
 import "./OrderDetailModal.css";
 
-function OrderDetailModal({ order, open, onClose }) {
+function OrderDetailModal({ order, open, onClose, storeName, username, productsMap }) {
   if (!open || !order) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="order-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="order-modal" onClick={(e) => e.stopPropagation()}>
         <div className="order-modal-header">
           <div>
             <h2>Chi tiết đơn hàng #{order.id}</h2>
@@ -27,8 +24,13 @@ function OrderDetailModal({ order, open, onClose }) {
           </div>
 
           <div className="info-card">
-            <span>Store ID</span>
-            <strong>{order.store_id || "N/A"}</strong>
+            <span>Tạo bởi</span>
+            <strong>{order.created_by || username || "N/A"}</strong>
+          </div>
+
+          <div className="info-card">
+            <span>Tên cửa hàng</span>
+            <strong>{order.store_name || storeName || "N/A"}</strong>
           </div>
 
           <div className="info-card">
@@ -55,6 +57,7 @@ function OrderDetailModal({ order, open, onClose }) {
             <thead>
               <tr>
                 <th>Product ID</th>
+                <th>Tên sản phẩm</th>
                 <th>Số lượng</th>
               </tr>
             </thead>
@@ -63,12 +66,13 @@ function OrderDetailModal({ order, open, onClose }) {
                 order.items.map((item, index) => (
                   <tr key={index}>
                     <td>{item.product_id}</td>
+                    <td>{productsMap?.[item.product_id] || "Chưa có tên"}</td>
                     <td>{item.quantity}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="2" className="empty-row">
+                  <td colSpan="3" className="empty-row">
                     Không có sản phẩm trong đơn hàng
                   </td>
                 </tr>

@@ -1,37 +1,72 @@
-.admin-users-page {
+.central-inventory-page {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.admin-users-top {
+.inventory-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
 }
 
-.admin-users-title {
+.inventory-title {
   font-size: 28px;
   font-weight: 800;
   color: #0f172a;
   margin-bottom: 6px;
 }
 
-.admin-users-subtitle {
+.inventory-subtitle {
   color: #64748b;
   font-size: 14px;
 }
 
-.admin-toolbar {
+.inventory-top-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.primary-btn,
+.secondary-btn {
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.18);
+}
+
+.secondary-btn {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.primary-btn:hover,
+.secondary-btn:hover {
+  transform: translateY(-1px);
+}
+
+.inventory-toolbar {
   display: flex;
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
 }
 
-.search-input,
-.filter-select {
+.search-input {
+  width: 320px;
   height: 44px;
   border: 1px solid #dbe3ee;
   border-radius: 12px;
@@ -41,11 +76,7 @@
   outline: none;
 }
 
-.search-input {
-  width: 320px;
-}
-
-.admin-panel {
+.inventory-panel {
   background: #fff;
   border-radius: 20px;
   padding: 18px;
@@ -53,11 +84,11 @@
   border: 1px solid #eef2f7;
 }
 
-.state-box {
+.inventory-state {
   color: #334155;
 }
 
-.state-box.error {
+.inventory-state.error {
   color: #dc2626;
 }
 
@@ -86,14 +117,13 @@ tbody td {
   font-size: 14px;
 }
 
-.username-cell {
+.highlight-cell {
   font-weight: 700;
-  color: #4f46e5;
+  color: #2563eb;
 }
 
-.role-badge,
-.active-badge,
-.locked-badge {
+.normal-stock-badge,
+.low-stock-badge {
   display: inline-flex;
   align-items: center;
   padding: 6px 10px;
@@ -102,90 +132,17 @@ tbody td {
   font-weight: 700;
 }
 
-.role-badge {
-  background: #eef2ff;
-  color: #4f46e5;
-}
-
-.active-badge {
+.normal-stock-badge {
   background: #dcfce7;
   color: #15803d;
 }
 
-.locked-badge {
+.low-stock-badge {
   background: #fee2e2;
   color: #b91c1c;
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.view-btn,
-.edit-btn,
-.lock-btn,
-.unlock-btn,
-.primary-btn,
-.ghost-btn {
-  border: none;
-  border-radius: 10px;
-  padding: 9px 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.view-btn {
-  background: #eef2ff;
-  color: #4f46e5;
-}
-
-.edit-btn {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-.lock-btn {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.unlock-btn {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.primary-btn {
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  color: #fff;
-  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.18);
-}
-
-.ghost-btn {
-  background: #f3f4f6;
-  color: #111827;
 }
 
 .empty-row {
   text-align: center;
   color: #94a3b8;
-}
-
-@media (max-width: 768px) {
-  .admin-users-top {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-input {
-    width: 100%;
-  }
-
-  .primary-btn {
-    width: 100%;
-  }
 }

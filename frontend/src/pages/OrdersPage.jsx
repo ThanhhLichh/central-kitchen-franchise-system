@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import { getOrdersApi, getOrderByIdApi } from "../api/orderApi";
+import { getProductsApi } from "../api/inventoryApi";
 import OrderDetailModal from "../components/OrderDetailModal";
 import "./OrdersPage.css";
 import { FiEye } from "react-icons/fi";
@@ -9,8 +10,11 @@ import { FiEye } from "react-icons/fi";
 function OrdersPage() {
   const navigate = useNavigate();
   const storeId = localStorage.getItem("storeId");
+  const storeName = localStorage.getItem("storeName");
+  const username = localStorage.getItem("fullName") || localStorage.getItem("username");
 
   const [orders, setOrders] = useState([]);
+  const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -21,21 +25,27 @@ function OrdersPage() {
   const [loadingOrderId, setLoadingOrderId] = useState(null);
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const data = await getOrdersApi();
-        const normalized = Array.isArray(data) ? data : [];
+        const [ordersData, productsData] = await Promise.all([
+          getOrdersApi(),
+          getProductsApi(),
+        ]);
 
-        const filteredByStore = normalized.filter((order) => {
+        const normalizedOrders = Array.isArray(ordersData) ? ordersData : [];
+        const normalizedProducts = Array.isArray(productsData) ? productsData : [];
+
+        const filteredByStore = normalizedOrders.filter((order) => {
           if (!storeId) return true;
           if (order.store_id === undefined || order.store_id === null) return true;
           return String(order.store_id) === String(storeId);
         });
 
         setOrders(filteredByStore);
+        setProducts(normalizedProducts);
       } catch (err) {
         console.error(err);
         setError("Không tải được danh sách đơn hàng.");
@@ -44,8 +54,15 @@ function OrdersPage() {
       }
     };
 
-    fetchOrders();
+    fetchData();
   }, [storeId]);
+
+  const productsMap = useMemo(() => {
+    return products.reduce((acc, product) => {
+      acc[product.id] = product.name;
+      return acc;
+    }, {});
+  }, [products]);
 
   const handleViewDetail = async (orderId) => {
     try {
@@ -161,16 +178,16 @@ function OrdersPage() {
                             className="view-btn"
                             onClick={() => handleViewDetail(order.id)}
                             disabled={detailLoading && loadingOrderId === order.id}
-                            >
+                          >
                             {detailLoading && loadingOrderId === order.id ? (
-                                "Đang tải..."
+                              "Đang tải..."
                             ) : (
-                                <>
+                              <>
                                 <FiEye className="btn-icon" />
                                 Xem chi tiết
-                                </>
+                              </>
                             )}
-                            </button>
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -189,6 +206,9 @@ function OrdersPage() {
           setIsModalOpen(false);
           setSelectedOrder(null);
         }}
+        storeName={storeName}
+        username={username}
+        productsMap={productsMap}
       />
     </Layout>
   );

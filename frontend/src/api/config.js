@@ -28,4 +28,6 @@ export const INVENTORY_API = {
   GET_ALL: `${GATEWAY_BASE_URL}/inventory`,
   GET_PRODUCTS: `${GATEWAY_BASE_URL}/products`,
   CHECK_STOCK: `${GATEWAY_BASE_URL}/check-stock`,
+  IMPORT: `${GATEWAY_BASE_URL}/inventory/import`,
+  GET_STORE_INVENTORY: (storeId) => `${GATEWAY_BASE_URL}/inventory/store/${storeId}`,
 };

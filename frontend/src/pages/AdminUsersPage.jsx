@@ -8,6 +8,8 @@ import {
 } from "../api/adminApi";
 import UserDetailModal from "../components/UserDetailModal";
 import CreateUserModal from "../components/CreateUserModal";
+import EditUserModal from "../components/EditUserModal";
+import { FiEye, FiLock, FiUnlock, FiEdit2 } from "react-icons/fi";
 import "./AdminUsersPage.css";
 
 function AdminUsersPage() {
@@ -20,6 +22,8 @@ function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -40,23 +44,23 @@ function AdminUsersPage() {
   }, []);
 
   const filteredUsers = useMemo(() => {
-  return users.filter((user) => {
-    const text = search.trim().toLowerCase();
+    return users.filter((user) => {
+      const text = search.trim().toLowerCase();
 
-    const matchSearch =
-      user.userName?.toLowerCase().includes(text) ||
-      user.fullName?.toLowerCase().includes(text) ||
-      user.email?.toLowerCase().includes(text);
+      const matchSearch =
+        user.userName?.toLowerCase().includes(text) ||
+        user.fullName?.toLowerCase().includes(text) ||
+        user.email?.toLowerCase().includes(text);
 
-    const firstRole = user.roles?.[0] || "";
+      const firstRole = user.roles?.[0] || "";
 
-    if (firstRole === "Admin") return false;
+      if (firstRole === "Admin") return false;
 
-    const matchRole = roleFilter === "all" ? true : firstRole === roleFilter;
+      const matchRole = roleFilter === "all" ? true : firstRole === roleFilter;
 
-    return matchSearch && matchRole;
-  });
-}, [users, search, roleFilter]);
+      return matchSearch && matchRole;
+    });
+  }, [users, search, roleFilter]);
 
   const handleViewDetail = async (id) => {
     try {
@@ -121,7 +125,6 @@ function AdminUsersPage() {
             onChange={(e) => setRoleFilter(e.target.value)}
           >
             <option value="all">Tất cả role</option>
-            {/* <option value="Admin">Admin</option> */}
             <option value="Manager">Manager</option>
             <option value="SupplyCoordinator">SupplyCoordinator</option>
             <option value="CentralKitchenStaff">CentralKitchenStaff</option>
@@ -181,16 +184,38 @@ function AdminUsersPage() {
                               className="view-btn"
                               onClick={() => handleViewDetail(user.id)}
                             >
+                              <FiEye style={{ marginRight: 6 }} />
                               Xem
                             </button>
 
                             <button
-                              className={
-                                user.isActive ? "lock-btn" : "unlock-btn"
-                              }
+                              type="button"
+                              className="edit-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingUserId(user.id);
+                                setIsEditOpen(true);
+                              }}
+                            >
+                              <FiEdit2 style={{ marginRight: 6 }} />
+                              Sửa
+                            </button>
+
+                            <button
+                              className={user.isActive ? "lock-btn" : "unlock-btn"}
                               onClick={() => handleToggleLock(user)}
                             >
-                              {user.isActive ? "Khóa" : "Mở khóa"}
+                              {user.isActive ? (
+                                <>
+                                  <FiLock style={{ marginRight: 6 }} />
+                                  Khóa
+                                </>
+                              ) : (
+                                <>
+                                  <FiUnlock style={{ marginRight: 6 }} />
+                                  Mở khóa
+                                </>
+                              )}
                             </button>
                           </div>
                         </td>
@@ -216,6 +241,16 @@ function AdminUsersPage() {
           open={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}
           onCreated={fetchUsers}
+        />
+
+        <EditUserModal
+          userId={editingUserId}
+          open={isEditOpen}
+          onClose={() => {
+            setIsEditOpen(false);
+            setEditingUserId(null);
+          }}
+          onUpdated={fetchUsers}
         />
       </div>
     </Layout>

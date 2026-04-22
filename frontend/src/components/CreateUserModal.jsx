@@ -1,4 +1,16 @@
 import { useEffect, useState } from "react";
+import {
+  FiX,
+  FiUser,
+  FiLock,
+  FiMail,
+  FiHome,
+  FiBriefcase,
+  FiMapPin,
+  FiShoppingBag,
+  FiUserPlus,
+} from "react-icons/fi";
+
 import { createUserApi, getStoresApi } from "../api/adminApi";
 import "./CreateUserModal.css";
 
@@ -68,36 +80,16 @@ function CreateUserModal({ open, onClose, onCreated }) {
       setSubmitting(true);
 
       const payload = {
-        username: formData.username,
-        password: formData.password,
-        email: formData.email,
-        fullName: formData.fullName,
-        locationType: formData.locationType,
+        ...formData,
         storeId: isStoreStaff ? formData.storeId : null,
-        roleName: formData.roleName,
       };
 
       await createUserApi(payload);
 
       onCreated?.();
       onClose?.();
-
-      setFormData({
-        username: "",
-        password: "",
-        email: "",
-        fullName: "",
-        locationType: "HQ",
-        storeId: "",
-        roleName: "Manager",
-      });
     } catch (err) {
-      console.error(err);
-      setError(
-        typeof err.response?.data === "string"
-          ? err.response.data
-          : "Tạo tài khoản thất bại."
-      );
+      setError("Tạo tài khoản thất bại.");
     } finally {
       setSubmitting(false);
     }
@@ -106,98 +98,119 @@ function CreateUserModal({ open, onClose, onCreated }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="create-user-modal" onClick={(e) => e.stopPropagation()}>
+        {/* HEADER */}
         <div className="user-modal-header">
-          <div>
-            <h2>Tạo người dùng mới</h2>
-            <p>Thêm tài khoản mới vào hệ thống</p>
+        <div className="header-left">
+          <div className="header-icon">
+            <FiUserPlus />
           </div>
-
-          <button className="close-btn" onClick={onClose}>
-            ×
-          </button>
+          <div>
+            <h2>Tạo người dùng</h2>
+            <p>Thêm tài khoản mới</p>
+          </div>
         </div>
 
-        <form className="create-user-form" onSubmit={handleSubmit}>
+        <button className="close-btn" onClick={onClose}>
+          <FiX size={20} />
+        </button>
+      </div>
+
+        <form onSubmit={handleSubmit} className="create-user-form">
           <div className="form-grid">
-            <input
-              name="username"
-              placeholder="Username"
-              value={formData.username}
-              onChange={handleChange}
-              required
-            />
 
-            <input
-              name="password"
-              type="password"
-              placeholder="Password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-
-            <input
-              name="email"
-              type="email"
-              placeholder="Email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-
-            <input
-              name="fullName"
-              placeholder="Họ và tên"
-              value={formData.fullName}
-              onChange={handleChange}
-              required
-            />
-
-            <select name="roleName" value={formData.roleName} onChange={handleChange}>
-              <option value="Manager">Manager</option>
-              <option value="SupplyCoordinator">SupplyCoordinator</option>
-              <option value="CentralKitchenStaff">CentralKitchenStaff</option>
-              <option value="FranchiseStoreStaff">FranchiseStoreStaff</option>
-            </select>
-
-            <input
-              name="locationType"
-              placeholder="Location Type"
-              value={formData.locationType}
-              onChange={handleChange}
-              disabled={isStoreStaff}
-              required
-            />
-
-            {isStoreStaff && (
-              <select
-                name="storeId"
-                value={formData.storeId}
+            <div className="input-group">
+              <FiUser />
+              <input
+                name="username"
+                placeholder="Username"
+                value={formData.username}
                 onChange={handleChange}
                 required
-              >
-                <option value="">Chọn cửa hàng</option>
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name}
-                  </option>
-                ))}
+              />
+            </div>
+
+            <div className="input-group">
+              <FiLock />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="input-group">
+              <FiMail />
+              <input
+                name="email"
+                type="email"
+                placeholder="Email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="input-group">
+              <FiUser />
+              <input
+                name="fullName"
+                placeholder="Họ và tên"
+                value={formData.fullName}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="input-group">
+              <FiBriefcase />
+              <select name="roleName" value={formData.roleName} onChange={handleChange}>
+                <option value="Manager">Manager</option>
+                <option value="SupplyCoordinator">SupplyCoordinator</option>
+                <option value="CentralKitchenStaff">CentralKitchenStaff</option>
+                <option value="FranchiseStoreStaff">FranchiseStoreStaff</option>
               </select>
+            </div>
+
+            <div className="input-group">
+              <FiMapPin />
+              <input
+                name="locationType"
+                value={formData.locationType}
+                disabled
+              />
+            </div>
+
+            {isStoreStaff && (
+              <div className="input-group full-width">
+                <FiShoppingBag />
+                <select
+                  name="storeId"
+                  value={formData.storeId}
+                  onChange={handleChange}
+                >
+                  <option value="">Chọn cửa hàng</option>
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
           </div>
 
-          {loadingStores && isStoreStaff && (
-            <p className="helper-text">Đang tải danh sách cửa hàng...</p>
-          )}
-
+          {loadingStores && <p className="helper-text">Đang tải cửa hàng...</p>}
           {error && <p className="error-text">{error}</p>}
 
           <div className="modal-actions">
             <button type="button" className="ghost-btn" onClick={onClose}>
               Hủy
             </button>
-            <button type="submit" className="primary-btn" disabled={submitting}>
-              {submitting ? "Đang tạo..." : "Tạo người dùng"}
+            <button type="submit" className="primary-btn">
+              {submitting ? "Đang tạo..." : "Tạo"}
             </button>
           </div>
         </form>

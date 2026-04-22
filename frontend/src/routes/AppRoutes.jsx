@@ -6,6 +6,12 @@ import { getDefaultRouteByRole } from "../utils/getDefaultRouteByRole";
 import OrdersPage from "../pages/OrdersPage";
 import AdminUsersPage from "../pages/AdminUsersPage";
 import StoresPage from "../pages/StoresPage";
+import AdminDashboard from "../pages/AdminDashboard";
+import CreateOrderPage from "../pages/CreateOrderPage";
+import StoreInventoryPage from "../pages/StoreInventoryPage";
+import KitchenDashboard from "../pages/KitchenDashboard";
+import KitchenOrdersPage from "../pages/KitchenOrdersPage";
+import CentralInventoryPage from "../pages/CentralInventoryPage";
 
 function AppRoutes() {
   const token = localStorage.getItem("token");
@@ -16,11 +22,7 @@ function AppRoutes() {
       <Route
         path="/"
         element={
-          token ? (
-            <Navigate to={getDefaultRouteByRole(role)} replace />
-          ) : (
-            <Login />
-          )
+          token ? <Navigate to={getDefaultRouteByRole(role)} replace /> : <Login />
         }
       />
 
@@ -37,10 +39,11 @@ function AppRoutes() {
         path="/admin"
         element={
           <PrivateRoute>
-            <Dashboard />
+            <AdminDashboard />
           </PrivateRoute>
         }
       />
+
       <Route
         path="/admin/users"
         element={
@@ -49,6 +52,7 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
+
       <Route
         path="/admin/stores"
         element={
@@ -75,20 +79,21 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
+
       <Route
-      path="/orders/:id"
-      element={
-        <PrivateRoute>
-          <Dashboard />
-        </PrivateRoute>
-      }
-    />
+        path="/orders/:id"
+        element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        }
+      />
 
       <Route
         path="/orders/create"
         element={
           <PrivateRoute>
-            <Dashboard />
+            <CreateOrderPage />
           </PrivateRoute>
         }
       />
@@ -97,7 +102,7 @@ function AppRoutes() {
         path="/inventory"
         element={
           <PrivateRoute>
-            <Dashboard />
+            <StoreInventoryPage />
           </PrivateRoute>
         }
       />
@@ -106,7 +111,23 @@ function AppRoutes() {
         path="/kitchen"
         element={
           <PrivateRoute>
-            <Dashboard />
+            <KitchenDashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/kitchen/orders"
+        element={
+          <PrivateRoute>
+            <KitchenOrdersPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/kitchen/inventory"
+        element={
+          <PrivateRoute>
+            <CentralInventoryPage />
           </PrivateRoute>
         }
       />
