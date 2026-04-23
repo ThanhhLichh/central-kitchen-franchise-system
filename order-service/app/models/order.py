@@ -9,7 +9,8 @@ class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True)
-    store_id = Column(Integer, nullable=False)
+    store_id = Column(String(100), nullable=False)
+    created_by = Column(String(100), nullable=True)
     status = Column(String(50), nullable=False, default="pending")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

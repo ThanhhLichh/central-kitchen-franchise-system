@@ -1,0 +1,108 @@
+.kitchen-order-modal {
+  width: 100%;
+  max-width: 860px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
+  padding: 24px;
+}
+
+.kitchen-order-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.kitchen-order-modal-header h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.kitchen-order-modal-header p {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.kitchen-order-modal-info {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.info-card {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-card span {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.info-card strong {
+  font-size: 15px;
+  color: #111827;
+}
+
+.status-text.pending {
+  color: #c2410c;
+}
+
+.status-text.processing {
+  color: #1d4ed8;
+}
+
+.status-text.completed {
+  color: #15803d;
+}
+
+.kitchen-order-table-wrap h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.kitchen-order-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.kitchen-order-table th,
+.kitchen-order-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.kitchen-order-table th {
+  color: #64748b;
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .kitchen-order-modal-info {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .kitchen-order-modal {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .kitchen-order-modal-info {
+    grid-template-columns: 1fr;
+  }
+}

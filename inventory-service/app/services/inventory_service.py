@@ -4,8 +4,12 @@ from app.repositories.inventory_repository import InventoryRepository
 from app.repositories.product_repository import ProductRepository
 from app.config.db import db
 
-def get_inventory():
-    stocks = Inventory.query.all()
+def get_inventory(location_type="central_kitchen", store_id=None):
+    """
+    Lấy danh sách tồn kho theo loại kho và ID cửa hàng.
+    Mặc định trả về tồn kho của bếp trung tâm nếu không truyền tham số.
+    """
+    stocks = InventoryRepository.get_all(location_type=location_type, store_id=store_id)
 
     return [
         {
@@ -15,14 +19,19 @@ def get_inventory():
         for s in stocks
     ]
 
-def check_stock(items):
+def check_stock(items, location_type="central_kitchen", store_id=None):
+    """
+    Kiểm tra xem số lượng tồn kho có đủ đáp ứng danh sách các mặt hàng (items) yêu cầu hay không.
+    Kiểm tra trên loại kho và cửa hàng tương ứng được chỉ định.
+    """
     missing_items = []
 
     for item in items:
         product_id = item["product_id"]
         required_qty = item["quantity"]
 
-        stock = Inventory.query.filter_by(product_id=product_id).first()
+        # Lấy thông tin tồn kho cụ thể cho sản phẩm tại kho tương ứng
+        stock = InventoryRepository.get_by_product_id(product_id, location_type, store_id)
 
         if not stock or stock.quantity < required_qty:
             missing_items.append({
@@ -36,7 +45,12 @@ def check_stock(items):
     }
 
 
-def import_stock(product_id, quantity):
+def import_stock(product_id, quantity, location_type="central_kitchen", store_id=None):
+    """
+    Nhập kho cho một sản phẩm nhất định vào kho trung tâm hoặc kho cửa hàng.
+    Nếu kho đã có sản phẩm thì cộng dồn số lượng, nếu chưa thì tạo dòng tồn kho mới.
+    Đồng thời ghi nhận vào lịch sử biến động kho (StockMovement).
+    """
     try:
         product = ProductRepository.get_by_id(product_id)
         if not product:
@@ -45,18 +59,21 @@ def import_stock(product_id, quantity):
                 "error": f"Product {product_id} not found"
             }
 
-        stock = InventoryRepository.get_by_product_id(product_id)
+        stock = InventoryRepository.get_by_product_id(product_id, location_type, store_id)
 
+        # Cộng dồn nếu đã tồn tại, ngược lại tạo mới
         if stock:
             stock.quantity += quantity
         else:
-            InventoryRepository.create(product_id, quantity)
+            InventoryRepository.create(product_id, quantity, location_type, store_id)
 
-        # log
+        # Ghi log lịch sử giao dịch nhập kho
         movement = StockMovement(
             product_id=product_id,
             change=quantity,
-            type="import"
+            type="import",
+            location_type=location_type,
+            store_id=store_id
         )
         db.session.add(movement)
 
@@ -74,9 +91,10 @@ def import_stock(product_id, quantity):
             "error": str(e)
         }
 
-def export_stock(items):
+def export_stock(items, location_type="central_kitchen", store_id=None):
     """
-    Trừ kho khi nhận message từ RabbitMQ
+    Trừ kho khi có yêu cầu xuất kho (ví dụ: nhận message từ RabbitMQ khi order được tạo).
+    Kiểm tra tồn kho trước khi thực hiện trừ và ghi lại lịch sử biến động.
     """
 
     try:
@@ -85,7 +103,7 @@ def export_stock(items):
         products = ProductRepository.get_by_ids(product_ids)
         product_map = {p.id: p for p in products}
 
-        stocks = InventoryRepository.get_by_product_ids(product_ids)
+        stocks = InventoryRepository.get_by_product_ids(product_ids, location_type, store_id)
         stock_map = {s.product_id: s for s in stocks}
 
         missing_items = []
@@ -122,7 +140,9 @@ def export_stock(items):
             movement = StockMovement(
                 product_id=pid,
                 change=-qty,
-                type="export"
+                type="export",
+                location_type=location_type,
+                store_id=store_id
             )
             db.session.add(movement)
 

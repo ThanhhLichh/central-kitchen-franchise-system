@@ -1,0 +1,39 @@
+.store-inventory-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.inventory-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.inventory-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.inventory-subtitle {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.inventory-panel {
+  background: #fff;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  border: 1px solid #eef2f7;
+}
+
+.inventory-state {
+  color: #334155;
+}
+
+.inventory-state.error {
+  color: #dc2626;
+}

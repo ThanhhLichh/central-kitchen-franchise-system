@@ -1,0 +1,191 @@
+.admin-users-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-users-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-users-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.admin-users-subtitle {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.admin-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input,
+.filter-select {
+  height: 44px;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  padding: 0 14px;
+  background: #fff;
+  color: #0f172a;
+  outline: none;
+}
+
+.search-input {
+  width: 320px;
+}
+
+.admin-panel {
+  background: #fff;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  border: 1px solid #eef2f7;
+}
+
+.state-box {
+  color: #334155;
+}
+
+.state-box.error {
+  color: #dc2626;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead th {
+  text-align: left;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 700;
+  padding: 14px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+tbody td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.username-cell {
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+.role-badge,
+.active-badge,
+.locked-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.role-badge {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.active-badge {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.locked-badge {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.view-btn,
+.edit-btn,
+.lock-btn,
+.unlock-btn,
+.primary-btn,
+.ghost-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-btn {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.edit-btn {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.lock-btn {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.unlock-btn {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.primary-btn {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.18);
+}
+
+.ghost-btn {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.empty-row {
+  text-align: center;
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .admin-users-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .primary-btn {
+    width: 100%;
+  }
+}

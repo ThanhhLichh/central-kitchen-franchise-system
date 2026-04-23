@@ -1,4 +1,3 @@
-import httpx
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -11,8 +10,6 @@ ALLOWED_TRANSITIONS = {
     "delivered": []
 }
 
-# Đổi URL này thành URL thực tế của Order Service trong team
-ORDER_SERVICE_URL = "http://127.0.0.1:8002/orders"
 
 async def handle_create_delivery(db: AsyncSession, delivery_data):
     try:
@@ -53,6 +50,31 @@ async def handle_get_delivery_by_id(db: AsyncSession, delivery_id: int):
     return delivery
 
 
+async def handle_update_delivery(db: AsyncSession, delivery_id: int, payload):
+    try:
+        result = await db.execute(select(Delivery).filter(Delivery.id == delivery_id))
+        delivery = result.scalars().first()
+
+        if not delivery:
+            raise HTTPException(status_code=404, detail="Delivery not found")
+
+        delivery.delivery_date = payload.delivery_date
+        await db.commit()
+        await db.refresh(delivery)
+
+        return {
+            "message": "Delivery updated successfully",
+            "delivery_id": delivery.id,
+            "delivery_date": str(delivery.delivery_date)
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Update delivery failed: {str(e)}")
+
+
 async def handle_update_delivery_status(db: AsyncSession, delivery_id: int, payload):
     try:
         result = await db.execute(select(Delivery).filter(Delivery.id == delivery_id))
@@ -61,8 +83,7 @@ async def handle_update_delivery_status(db: AsyncSession, delivery_id: int, payl
         if not delivery:
             raise HTTPException(status_code=404, detail="Delivery not found")
 
-        # Pydantic Enum cần gọi .value để lấy string
-        new_status = payload.status.value 
+        new_status = payload.status.value
         current_status = delivery.status
 
         if new_status == current_status:
@@ -81,20 +102,6 @@ async def handle_update_delivery_status(db: AsyncSession, delivery_id: int, payl
         delivery.status = new_status
         await db.commit()
         await db.refresh(delivery)
-
-        # WEBHOOK: Gửi tín hiệu hoàn thành cho Order Service
-        if new_status == "delivered":
-            async with httpx.AsyncClient() as client:
-                try:
-                    # Gọi API cập nhật trạng thái bên Order Service
-                    await client.put(
-                        f"{ORDER_SERVICE_URL}/status",
-                        json={"order_id": delivery.order_id, "status": "completed"},
-                        timeout=5.0
-                    )
-                except httpx.RequestError as exc:
-                    # In log cảnh báo, không làm crash Delivery Service nếu Order Service lỗi
-                    print(f"Warning: Failed to notify Order Service - {exc}")
 
         return {
             "message": "Delivery status updated successfully",

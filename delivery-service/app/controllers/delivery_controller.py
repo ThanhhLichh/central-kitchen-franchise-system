@@ -1,10 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.delivery_schema import DeliveryCreate, DeliveryStatusUpdate
+from app.schemas.delivery_schema import DeliveryCreate, DeliveryUpdate, DeliveryStatusUpdate
 from app.services.delivery_service import (
     handle_create_delivery,
     handle_get_deliveries,
     handle_get_delivery_by_id,
+    handle_update_delivery,
     handle_update_delivery_status,
 )
 
@@ -19,6 +20,10 @@ async def get_deliveries(db: AsyncSession):
 
 async def get_delivery_by_id(db: AsyncSession, delivery_id: int):
     return await handle_get_delivery_by_id(db, delivery_id)
+
+
+async def update_delivery(db: AsyncSession, delivery_id: int, payload: DeliveryUpdate):
+    return await handle_update_delivery(db, delivery_id, payload)
 
 
 async def update_delivery_status(db: AsyncSession, delivery_id: int, payload: DeliveryStatusUpdate):

@@ -7,6 +7,8 @@ using System.Security.Claims;
 using System.Text;
 using AuthService.Models;
 using AuthService.Services;
+using AuthService.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace AuthService.Controllers
 {
@@ -18,13 +20,20 @@ namespace AuthService.Controllers
         private readonly IConfiguration _configuration;
         private readonly TokenCacheService _tokenCache;
         private readonly NotificationService _notificationService;
+        private readonly AuthDbContext _dbContext;
 
-        public AuthController(UserManager<ApplicationUser> userManager, IConfiguration configuration, TokenCacheService tokenCache, NotificationService notificationService)
+        public AuthController(
+            UserManager<ApplicationUser> userManager,
+            IConfiguration configuration,
+            TokenCacheService tokenCache,
+            NotificationService notificationService,
+            AuthDbContext dbContext)
         {
             _userManager = userManager;
             _configuration = configuration;
             _tokenCache = tokenCache;
             _notificationService = notificationService;
+            _dbContext = dbContext;
         }
 
         [HttpPost("login")]
@@ -36,18 +45,29 @@ namespace AuthService.Controllers
                 if (!user.IsActive) return Unauthorized("Tài khoản đã bị khóa.");
 
                 var userRoles = await _userManager.GetRolesAsync(user);
+                var storeName = string.Empty;
+                if (user.StoreId.HasValue)
+                {
+                    storeName = await _dbContext.Stores
+                        .Where(s => s.Id == user.StoreId.Value)
+                        .Select(s => s.Name)
+                        .FirstOrDefaultAsync() ?? string.Empty;
+                }
+
                 var authClaims = new List<Claim>
                 {
-                    new Claim(ClaimTypes.Name, user.UserName),
+                    new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim("UserId", user.Id.ToString()),
-                    new Claim("LocationType", user.LocationType ?? "")
+                    new Claim("LocationType", user.LocationType ?? ""),
+                    new Claim("FullName", user.FullName ?? "")
                 };
                 
                 if (user.StoreId.HasValue)
                 {
                     authClaims.Add(new Claim("StoreId", user.StoreId.Value.ToString()));
                 }
+                authClaims.Add(new Claim("StoreName", storeName));
 
                 foreach (var role in userRoles)
                 {
@@ -71,6 +91,20 @@ namespace AuthService.Controllers
                 return BadRequest("Tên đăng nhập này đã tồn tại trong hệ thống.");
             }
 
+            var isStoreStaff = string.Equals(request.RoleName, "FranchiseStoreStaff", StringComparison.OrdinalIgnoreCase);
+            if (isStoreStaff)
+            {
+                if (!request.StoreId.HasValue)
+                {
+                    return BadRequest("Nhân viên cửa hàng (FranchiseStoreStaff) bắt buộc phải có StoreId.");
+                }
+
+                var storeExists = await _dbContext.Stores.AnyAsync(s => s.Id == request.StoreId.Value);
+                if (!storeExists)
+                {
+                    return BadRequest("StoreId không tồn tại.");
+                }
+            }
             
             var newUser = new ApplicationUser
             {
@@ -95,7 +129,15 @@ namespace AuthService.Controllers
                 await _userManager.AddToRoleAsync(newUser, request.RoleName);
             }
 
-            return Ok(new { Message = $"Tạo tài khoản {request.Username} và cấp quyền {request.RoleName} thành công!" });
+            return Ok(new
+            {
+                Message = $"Tạo tài khoản {request.Username} và cấp quyền {request.RoleName} thành công!",
+                newUser.Id,
+                newUser.UserName,
+                newUser.Email,
+                newUser.FullName,
+                newUser.StoreId
+            });
         }
 
         [HttpPost("logout")]
@@ -120,9 +162,130 @@ namespace AuthService.Controllers
             return Ok(users);
         }
 
+        [HttpGet("users")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _userManager.Users
+                .Include(u => u.Store)
+                .ToListAsync();
+
+            var response = new List<object>();
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                response.Add(new
+                {
+                    user.Id,
+                    user.UserName,
+                    user.Email,
+                    user.FullName,
+                    user.StoreId,
+                    user.IsActive,
+                    Roles = roles
+                });
+            }
+
+            return Ok(response);
+        }
+
+        [HttpGet("users/{id:guid}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetUserById(Guid id)
+        {
+            var user = await _userManager.Users
+                .Include(u => u.Store)
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user == null) return NotFound("Không tìm thấy user.");
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return Ok(new
+            {
+                user.Id,
+                user.UserName,
+                user.Email,
+                user.FullName,
+                user.LocationType,
+                user.StoreId,
+                StoreName = user.Store?.Name,
+                StoreAddress = user.Store?.Address,
+                user.IsActive,
+                Roles = roles,
+                user.CreatedAt,
+                user.UpdatedAt
+            });
+        }
+
+        [HttpPut("users/{id:guid}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
+        {
+            var user = await _userManager.FindByIdAsync(id.ToString());
+            if (user == null) return NotFound("Không tìm thấy user.");
+
+            if (request.StoreId.HasValue)
+            {
+                var storeExists = await _dbContext.Stores.AnyAsync(s => s.Id == request.StoreId.Value);
+                if (!storeExists)
+                {
+                    return BadRequest("StoreId không tồn tại.");
+                }
+            }
+
+            user.Email = request.Email ?? user.Email;
+            user.FullName = request.FullName ?? user.FullName;
+            user.StoreId = request.StoreId;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest($"Lỗi cập nhật tài khoản: {errors}");
+            }
+
+            return Ok(new { Message = "Cập nhật user thành công." });
+        }
+
+        [HttpPatch("users/{id:guid}/lock")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> LockUser(Guid id)
+        {
+            return await SetUserActiveStatus(id, false);
+        }
+
+        [HttpPatch("users/{id:guid}/unlock")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UnlockUser(Guid id)
+        {
+            return await SetUserActiveStatus(id, true);
+        }
+
+        private async Task<IActionResult> SetUserActiveStatus(Guid id, bool isActive)
+        {
+            var user = await _userManager.FindByIdAsync(id.ToString());
+            if (user == null) return NotFound("Không tìm thấy user.");
+
+            user.IsActive = isActive;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest($"Không thể cập nhật trạng thái user: {errors}");
+            }
+
+            return Ok(new { Message = isActive ? "Đã mở khóa user." : "Đã khóa user." });
+        }
+
         private JwtSecurityToken GenerateJwtToken(List<Claim> authClaims)
         {
-            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]));
+            var secretKey = _configuration["JwtSettings:SecretKey"]
+                ?? throw new InvalidOperationException("JwtSettings:SecretKey is missing.");
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var token = new JwtSecurityToken(
                 issuer: _configuration["JwtSettings:Issuer"],
                 audience: _configuration["JwtSettings:Audience"],
@@ -136,21 +299,25 @@ namespace AuthService.Controllers
 
     public class LoginRequest
     {
-        public string Username { get; set; }
-        public string Password { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 
-        public class CreateUserRequest
+    public class CreateUserRequest
     {
-        public string Username { get; set; }
-        public string Password { get; set; }
-        public string Email { get; set; }
-        public string FullName { get; set; }
-        public string LocationType { get; set; } 
-        public Guid? StoreId { get; set; } 
-        public string RoleName { get; set; } 
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string LocationType { get; set; } = string.Empty;
+        public Guid? StoreId { get; set; }
+        public string RoleName { get; set; } = string.Empty;
     }
 
-
-
+    public class UpdateUserRequest
+    {
+        public string? Email { get; set; }
+        public string? FullName { get; set; }
+        public Guid? StoreId { get; set; }
+    }
 }
