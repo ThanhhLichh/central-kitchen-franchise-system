@@ -18,6 +18,10 @@ class DeliveryCreate(BaseModel):
     delivery_date: Optional[date] = None
 
 
+class DeliveryUpdate(BaseModel):
+    delivery_date: date
+
+
 class DeliveryStatusUpdate(BaseModel):
     status: DeliveryStatus
 
