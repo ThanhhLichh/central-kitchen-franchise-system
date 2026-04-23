@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProductionService.Data;
 
@@ -11,9 +12,11 @@ using ProductionService.Data;
 namespace Production_Service.Migrations
 {
     [DbContext(typeof(ProductionDbContext))]
-    partial class ProductionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260423152608_AddOrderIdToProductionPlan")]
+    partial class AddOrderIdToProductionPlan
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

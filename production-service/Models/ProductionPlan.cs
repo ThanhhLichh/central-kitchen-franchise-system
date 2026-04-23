@@ -1,9 +1,7 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace ProductionService.Models
 {
-    // Quản lý các trạng thái hợp lệ
     public enum PlanStatus
     {
         Pending,
@@ -15,6 +13,9 @@ namespace ProductionService.Models
     {
         [Key]
         public int Id { get; set; }
+
+        [Required]
+        public int OrderId { get; set; }
 
         [Required]
         public int ProductId { get; set; }

@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
-// 3 DÒNG NÀY CHÍNH LÀ CHÌA KHÓA ĐỂ HẾT LỖI ĐỎ:
 using ProductionService.Models;
 using ProductionService.DTOs;
 using ProductionService.Data;
@@ -17,7 +15,10 @@ namespace ProductionService.Controllers
 
         // GET: /production-plan
         [HttpGet("production-plan")]
-        public async Task<IActionResult> GetProductionPlans([FromQuery] string? status, [FromQuery] int? productId)
+        public async Task<IActionResult> GetProductionPlans(
+            [FromQuery] string? status,
+            [FromQuery] int? productId,
+            [FromQuery] int? orderId)
         {
             var query = _context.ProductionPlans.AsQueryable();
 
@@ -27,7 +28,10 @@ namespace ProductionService.Controllers
             if (productId.HasValue)
                 query = query.Where(p => p.ProductId == productId.Value);
 
-            var plans = await query.ToListAsync();  
+            if (orderId.HasValue)
+                query = query.Where(p => p.OrderId == orderId.Value);
+
+            var plans = await query.ToListAsync();
             return Ok(plans);
         }
 
@@ -38,8 +42,23 @@ namespace ProductionService.Controllers
             if (request.Quantity <= 0)
                 return BadRequest(new { message = "Quantity must be greater than 0." });
 
+            // Kiểm tra trùng: cùng orderId + productId mà đang pending hoặc processing
+            var existedPlan = await _context.ProductionPlans.FirstOrDefaultAsync(p =>
+                p.OrderId == request.OrderId &&
+                p.ProductId == request.ProductId &&
+                (p.Status == "pending" || p.Status == "processing"));
+
+            if (existedPlan != null)
+            {
+                return BadRequest(new
+                {
+                    message = "A production plan for this order and product already exists."
+                });
+            }
+
             var newPlan = new ProductionPlan
             {
+                OrderId = request.OrderId,
                 ProductId = request.ProductId,
                 Quantity = request.Quantity,
                 Status = PlanStatus.Pending.ToString().ToLower()
@@ -51,6 +70,7 @@ namespace ProductionService.Controllers
             return Created($"/production-plan/{newPlan.Id}", new
             {
                 id = newPlan.Id,
+                orderId = newPlan.OrderId,
                 productId = newPlan.ProductId,
                 quantity = newPlan.Quantity,
                 status = newPlan.Status,
@@ -62,7 +82,6 @@ namespace ProductionService.Controllers
         [HttpPut("production-status")]
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusRequest request)
         {
-            // TỐI ƯU: Chỉ tìm database 1 lần duy nhất thay vì 6 lần
             var plan = await _context.ProductionPlans.FindAsync(request.Id);
 
             if (plan == null)
@@ -71,18 +90,18 @@ namespace ProductionService.Controllers
             string currentStatus = plan.Status.ToLower();
             string newStatus = request.Status.ToLower();
 
-            // Logic State Machine: Kiểm tra chuyển đổi trạng thái hợp lệ
+            // State Machine: kiểm tra chuyển đổi trạng thái hợp lệ
             bool isValidTransition = false;
 
             if (currentStatus == "pending" && newStatus == "processing")
             {
                 isValidTransition = true;
-                // TO-DO (Tương lai): Gọi Inventory Service để kiểm tra/trừ nguyên liệu kho
+                // TO-DO: Gọi Inventory Service để kiểm tra/trừ nguyên liệu kho
             }
             else if (currentStatus == "processing" && newStatus == "done")
             {
                 isValidTransition = true;
-                // TO-DO (Tương lai): Gọi Inventory Service để cộng thành phẩm vào kho
+                // TO-DO: Gọi Inventory Service để cộng thành phẩm vào kho
             }
 
             if (!isValidTransition)
@@ -93,7 +112,6 @@ namespace ProductionService.Controllers
                 });
             }
 
-            // Cập nhật trạng thái
             plan.Status = newStatus;
             plan.UpdatedAt = DateTime.UtcNow;
 
@@ -102,6 +120,9 @@ namespace ProductionService.Controllers
             return Ok(new
             {
                 id = plan.Id,
+                orderId = plan.OrderId,
+                productId = plan.ProductId,
+                quantity = plan.Quantity,
                 status = plan.Status,
                 message = "Status updated successfully."
             });
