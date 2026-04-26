@@ -3,13 +3,20 @@ import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import { getOrdersApi } from "../api/orderApi";
 import "./Dashboard.css";
-import { FaShoppingCart, FaClock, FaSpinner, FaCheckCircle } from "react-icons/fa";
+import {
+  FaShoppingCart,
+  FaClock,
+  FaSpinner,
+  FaCheckCircle,
+  FaTools,
+} from "react-icons/fa";
 
 function Dashboard() {
   const navigate = useNavigate();
 
   const role = localStorage.getItem("role");
-  const fullName = localStorage.getItem("fullName") || localStorage.getItem("username");
+  const fullName =
+    localStorage.getItem("fullName") || localStorage.getItem("username");
   const storeId = localStorage.getItem("storeId");
   const storeName = localStorage.getItem("storeName");
 
@@ -24,11 +31,8 @@ function Dashboard() {
         setError("");
 
         const data = await getOrdersApi();
-
         const normalized = Array.isArray(data) ? data : [];
 
-        // Nếu order có store_id thì lọc theo cửa hàng đăng nhập.
-        // Nếu backend chưa trả store_id đúng format thì fallback lấy hết.
         const filtered = normalized.filter((order) => {
           if (!storeId) return true;
           if (order.store_id === undefined || order.store_id === null) return true;
@@ -50,10 +54,13 @@ function Dashboard() {
   const stats = useMemo(() => {
     const total = orders.length;
     const pending = orders.filter((o) => o.status === "pending").length;
+    const waitingProduction = orders.filter(
+      (o) => o.status === "waiting_production"
+    ).length;
     const processing = orders.filter((o) => o.status === "processing").length;
     const completed = orders.filter((o) => o.status === "completed").length;
 
-    return { total, pending, processing, completed };
+    return { total, pending, waitingProduction, processing, completed };
   }, [orders]);
 
   const recentOrders = useMemo(() => {
@@ -69,8 +76,8 @@ function Dashboard() {
             <p className="dashboard-subtitle">
               Xin chào <strong>{fullName}</strong>
               {role === "FranchiseStoreStaff" && storeName ? (
-              <> • Cửa hàng: {storeName}</>
-            ) : null}
+                <> • Cửa hàng: {storeName}</>
+              ) : null}
             </p>
           </div>
 
@@ -108,6 +115,16 @@ function Dashboard() {
                   <FaClock className="stat-icon" />
                 </div>
               </div>
+
+              {/* <div className="stat-card waiting-production">
+                <div className="stat-content">
+                  <div>
+                    <p>Chờ sản xuất</p>
+                    <h2>{stats.waitingProduction}</h2>
+                  </div>
+                  <FaTools className="stat-icon" />
+                </div>
+              </div> */}
 
               <div className="stat-card processing">
                 <div className="stat-content">

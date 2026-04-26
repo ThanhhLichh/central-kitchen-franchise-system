@@ -1,0 +1,39 @@
+.manager-products-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.manager-products-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.manager-products-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.manager-products-subtitle {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.manager-products-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.manager-products-panel {
+  background: #fff;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  border: 1px solid #eef2f7;
+}

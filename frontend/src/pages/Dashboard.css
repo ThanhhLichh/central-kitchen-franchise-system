@@ -245,3 +245,11 @@ tbody td {
     transform: rotate(360deg);
   }
 }
+.stat-card.waiting-production {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+}
+
+.status-badge.waiting_production {
+  background: #fef3c7;
+  color: #b45309;
+}

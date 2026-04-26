@@ -7,6 +7,8 @@ export const menuByRole = {
 
   Manager: [
     { label: "Tổng quan", path: "/manager" },
+    { label: "Sản phẩm", path: "/manager/products" },
+    { label: "Tồn kho", path: "/manager/inventory" },
     { label: "Báo cáo", path: "/manager/reports" },
   ],
 
@@ -19,14 +21,14 @@ export const menuByRole = {
 
   CentralKitchenStaff: [
   { label: "Tổng quan", path: "/kitchen" },
-  { label: "Đơn hàng cần xử lý", path: "/kitchen/orders" },
+  { label: "Đơn cần xử lý", path: "/kitchen/orders" },
   { label: "Kho trung tâm", path: "/kitchen/inventory" },
-  { label: "Sản xuất", path: "/production" },
-  { label: "Cập nhật trạng thái", path: "/production-status" },
+  { label: "Lệnh sản xuất", path: "/production" },
 ],
 
   SupplyCoordinator: [
     { label: "Tổng quan", path: "/coordinator" },
-    { label: "Giao hàng", path: "/delivery" },
+    { label: "Đơn chờ sản xuất", path: "/coordinator/orders" },
+    { label: "Danh sách giao hàng", path: "/delivery" },
   ],
 };

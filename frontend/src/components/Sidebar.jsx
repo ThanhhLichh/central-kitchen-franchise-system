@@ -12,6 +12,7 @@ import {
   FiShoppingBag,
   FiPackage,
   FiEdit3,
+  FiMail,
 } from "react-icons/fi";
 import logo from "../assets/logo.png";
 import "./Sidebar.css";
@@ -19,19 +20,25 @@ import "./Sidebar.css";
 const iconMap = {
   "Tổng quan": <FiHome />,
   "Đơn hàng": <FiShoppingCart />,
-  "Đơn hàng cần xử lý": <FiShoppingCart />,
+  "Đơn cần xử lý": <FiShoppingCart />,
   "Tạo đơn mới": <FiPlusCircle />,
 
   "Tồn kho bếp trung tâm": <FiArchive />,
   "Tồn kho cửa hàng": <FiArchive />,
   "Kho & Nguyên liệu": <FiArchive />,
   "Kho trung tâm": <FiArchive />,
+  "Lệnh sản xuất": <FiPackage />,
+
 
   "Sản xuất": <FiPackage />,
   "Cập nhật trạng thái": <FiEdit3 />,
+  "Đơn chờ sản xuất": <FiPackage />,
+  "Danh sách giao hàng": <FiTruck />,
 
   "Người dùng": <FiUsers />,
   "Báo cáo": <FiBarChart2 />,
+  "Tồn kho": <FiArchive />,
+  "Sản phẩm": <FiPackage />,
   "Giao hàng": <FiTruck />,
   "Cấu hình hệ thống": <FiSettings />,
   "Cửa hàng": <FiShoppingBag />,
@@ -76,6 +83,21 @@ function Sidebar() {
           );
         })}
       </nav>
+            <div className="sidebar-support-card">
+        <FiMail className="sidebar-support-icon" />
+
+        <div className="sidebar-support-text">
+          <p>Hỗ trợ </p>
+          <span>Liên hệ</span>
+        </div>
+
+        <a
+          href="mailto:buithanhlich931@gmail.com?subject=Hỗ trợ hệ thống CenKit"
+          className="sidebar-support-btn"
+        >
+          Gửi
+        </a>
+      </div>
     </aside>
   );
 }

@@ -1,7 +1,12 @@
 .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+
   width: 250px;
   min-width: 250px;
-  min-height: 100vh;
+  height: 100vh;
   box-sizing: border-box;
   background: #eff4ff;
   border-right: 1px solid #e5e7eb;
@@ -9,9 +14,10 @@
   flex-direction: column;
   padding: 22px 18px;
   box-shadow: 4px 0 18px rgba(15, 23, 42, 0.04);
-  align-self: stretch;
+  overflow: hidden;
 }
 
+/* ===== BRAND ===== */
 .sidebar-brand {
   display: flex;
   align-items: center;
@@ -50,6 +56,7 @@
   line-height: 1;
 }
 
+/* ===== DIVIDER ===== */
 .sidebar-divider {
   width: 100%;
   height: 1px;
@@ -58,11 +65,14 @@
   flex-shrink: 0;
 }
 
+/* ===== MENU ===== */
 .sidebar-menu {
   display: flex;
   flex-direction: column;
   gap: 10px;
   flex: 1;
+  overflow-y: auto;
+  padding-bottom: 88px;
 }
 
 .sidebar-item {
@@ -106,6 +116,66 @@
   font-weight: 600;
 }
 
+/* ===== SUPPORT CARD (NEW - COMPACT + PINNED) ===== */
+.sidebar-support-card {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(6px);
+
+  z-index: 2;
+}
+
+.sidebar-support-icon {
+  font-size: 45px;
+  color: #4f46e5;
+}
+
+.sidebar-support-text p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.sidebar-support-text span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.sidebar-support-btn {
+  margin-left: auto;
+
+  padding: 6px 10px;
+  font-size: 12px;
+
+  border-radius: 8px;
+  text-decoration: none;
+
+  background: #4f46e5;
+  color: #fff;
+  font-weight: 600;
+
+  transition: 0.2s;
+}
+
+.sidebar-support-btn:hover {
+  opacity: 0.9;
+}
+
+/* ===== RESPONSIVE ===== */
 @media (max-width: 900px) {
   .sidebar {
     width: 220px;

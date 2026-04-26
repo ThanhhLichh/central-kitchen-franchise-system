@@ -12,6 +12,14 @@ import StoreInventoryPage from "../pages/StoreInventoryPage";
 import KitchenDashboard from "../pages/KitchenDashboard";
 import KitchenOrdersPage from "../pages/KitchenOrdersPage";
 import CentralInventoryPage from "../pages/CentralInventoryPage";
+import DeliveryListPage from "../pages/DeliveryListPage";
+import CoordinatorOrdersPage from "../pages/CoordinatorOrdersPage";
+import ProductionPlanPage from "../pages/ProductionPlanPage";
+import CoordinatorDashboard from "../pages/CoordinatorDashboard";
+import ManagerDashboard from "../pages/ManagerDashboard";
+import ManagerInventoryPage from "../pages/ManagerInventoryPage";
+import ManagerReportsPage from "../pages/ManagerReportsPage";
+import ManagerProductsPage from "../pages/ManagerProductsPage";
 
 function AppRoutes() {
   const token = localStorage.getItem("token");
@@ -66,7 +74,31 @@ function AppRoutes() {
         path="/manager"
         element={
           <PrivateRoute>
-            <Dashboard />
+            <ManagerDashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/manager/inventory"
+        element={
+          <PrivateRoute>
+            <ManagerInventoryPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/manager/reports"
+        element={
+          <PrivateRoute>
+            <ManagerReportsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/manager/products"
+        element={
+          <PrivateRoute>
+            <ManagerProductsPage />
           </PrivateRoute>
         }
       />
@@ -136,16 +168,25 @@ function AppRoutes() {
         path="/production"
         element={
           <PrivateRoute>
-            <Dashboard />
+            <ProductionPlanPage />
           </PrivateRoute>
         }
       />
 
       <Route
-        path="/coordinator"
+          path="/coordinator"
+          element={
+            <PrivateRoute>
+              <CoordinatorDashboard />
+            </PrivateRoute>
+          }
+        />
+
+      <Route
+        path="/coordinator/orders"
         element={
           <PrivateRoute>
-            <Dashboard />
+            <CoordinatorOrdersPage />
           </PrivateRoute>
         }
       />
@@ -154,7 +195,7 @@ function AppRoutes() {
         path="/delivery"
         element={
           <PrivateRoute>
-            <Dashboard />
+            <DeliveryListPage />
           </PrivateRoute>
         }
       />
