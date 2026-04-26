@@ -8,6 +8,7 @@ namespace AuthService.Data
     {
         public AuthDbContext(DbContextOptions<AuthDbContext> options) : base(options) { }
         public DbSet<Store> Stores => Set<Store>();
+        public DbSet<UserDeviceToken> UserDeviceTokens => Set<UserDeviceToken>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -32,6 +33,16 @@ namespace AuthService.Data
                 .WithMany()
                 .HasForeignKey(u => u.StoreId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<UserDeviceToken>()
+                .HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<UserDeviceToken>()
+                .HasIndex(t => new { t.UserId, t.FcmToken })
+                .IsUnique();
         }
     }
 }

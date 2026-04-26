@@ -9,6 +9,7 @@ using AuthService.Models;
 using AuthService.Services;
 using AuthService.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 
 namespace AuthService.Controllers
 {
@@ -54,28 +55,16 @@ namespace AuthService.Controllers
                         .FirstOrDefaultAsync() ?? string.Empty;
                 }
 
-                var authClaims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim("UserId", user.Id.ToString()),
-                    new Claim("LocationType", user.LocationType ?? ""),
-                    new Claim("FullName", user.FullName ?? "")
-                };
-                
-                if (user.StoreId.HasValue)
-                {
-                    authClaims.Add(new Claim("StoreId", user.StoreId.Value.ToString()));
-                }
-                authClaims.Add(new Claim("StoreName", storeName));
-
-                foreach (var role in userRoles)
-                {
-                    authClaims.Add(new Claim(ClaimTypes.Role, role));
-                }
-
+                var authClaims = BuildUserClaims(user, userRoles, storeName);
                 var token = GenerateJwtToken(authClaims);
-                return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token), expiration = token.ValidTo });
+                var refreshToken = await IssueRefreshTokenAsync(user);
+
+                return Ok(new
+                {
+                    token = new JwtSecurityTokenHandler().WriteToken(token),
+                    expiration = token.ValidTo,
+                    refreshToken
+                });
             }
             return Unauthorized("Sai tài khoản hoặc mật khẩu.");
         }
@@ -91,12 +80,11 @@ namespace AuthService.Controllers
                 return BadRequest("Tên đăng nhập này đã tồn tại trong hệ thống.");
             }
 
-            var isStoreStaff = string.Equals(request.RoleName, "FranchiseStoreStaff", StringComparison.OrdinalIgnoreCase);
-            if (isStoreStaff)
+            if (RequiresStoreAssignment(request.RoleName))
             {
                 if (!request.StoreId.HasValue)
                 {
-                    return BadRequest("Nhân viên cửa hàng (FranchiseStoreStaff) bắt buộc phải có StoreId.");
+                    return BadRequest("Role này bắt buộc phải có StoreId.");
                 }
 
                 var storeExists = await _dbContext.Stores.AnyAsync(s => s.Id == request.StoreId.Value);
@@ -129,6 +117,11 @@ namespace AuthService.Controllers
                 await _userManager.AddToRoleAsync(newUser, request.RoleName);
             }
 
+            if (!string.IsNullOrWhiteSpace(request.FcmToken))
+            {
+                await _notificationService.SendAccountCreatedNotificationAsync(request.FcmToken, request.Username);
+            }
+
             return Ok(new
             {
                 Message = $"Tạo tài khoản {request.Username} và cấp quyền {request.RoleName} thành công!",
@@ -141,6 +134,7 @@ namespace AuthService.Controllers
         }
 
         [HttpPost("logout")]
+        [Authorize]
         public async Task<IActionResult> Logout()
         {
             var jti = User.FindFirst(JwtRegisteredClaimNames.Jti)?.Value;
@@ -148,7 +142,66 @@ namespace AuthService.Controllers
             {
                 await _tokenCache.RevokeTokenAsync(jti, TimeSpan.FromMinutes(120));
             }
+
+            var userId = User.FindFirst("UserId")?.Value;
+            if (Guid.TryParse(userId, out var parsedUserId))
+            {
+                var user = await _userManager.FindByIdAsync(parsedUserId.ToString());
+                if (user != null)
+                {
+                    await RevokeRefreshTokenAsync(user);
+                }
+            }
+
             return Ok("Đăng xuất thành công.");
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
+        {
+            var principal = GetPrincipalFromExpiredToken(request.Token);
+            if (principal?.Identity?.Name == null)
+            {
+                return Unauthorized("Access token không hợp lệ.");
+            }
+
+            var user = await _userManager.FindByNameAsync(principal.Identity.Name);
+            if (user == null || !user.IsActive)
+            {
+                return Unauthorized("User không hợp lệ hoặc đã bị khóa.");
+            }
+
+            var savedRefreshToken = await _userManager.GetAuthenticationTokenAsync(user, RefreshTokenProvider, RefreshTokenName);
+            var refreshTokenExpiryValue = await _userManager.GetAuthenticationTokenAsync(user, RefreshTokenProvider, RefreshTokenExpiryName);
+
+            if (string.IsNullOrWhiteSpace(savedRefreshToken) ||
+                !string.Equals(savedRefreshToken, request.RefreshToken, StringComparison.Ordinal) ||
+                !DateTime.TryParse(refreshTokenExpiryValue, out var refreshTokenExpiryUtc) ||
+                refreshTokenExpiryUtc <= DateTime.UtcNow)
+            {
+                return Unauthorized("Refresh token không hợp lệ hoặc đã hết hạn.");
+            }
+
+            var userRoles = await _userManager.GetRolesAsync(user);
+            var storeName = string.Empty;
+            if (user.StoreId.HasValue)
+            {
+                storeName = await _dbContext.Stores
+                    .Where(s => s.Id == user.StoreId.Value)
+                    .Select(s => s.Name)
+                    .FirstOrDefaultAsync() ?? string.Empty;
+            }
+
+            var authClaims = BuildUserClaims(user, userRoles, storeName);
+            var newAccessToken = GenerateJwtToken(authClaims);
+            var newRefreshToken = await IssueRefreshTokenAsync(user);
+
+            return Ok(new
+            {
+                token = new JwtSecurityTokenHandler().WriteToken(newAccessToken),
+                expiration = newAccessToken.ValidTo,
+                refreshToken = newRefreshToken
+            });
         }
 
         [HttpGet("sync-users")]
@@ -234,6 +287,12 @@ namespace AuthService.Controllers
                 }
             }
 
+            var userRoles = await _userManager.GetRolesAsync(user);
+            if (RequiresStoreAssignment(userRoles) && !request.StoreId.HasValue)
+            {
+                return BadRequest("Role hiện tại của user bắt buộc phải có StoreId.");
+            }
+
             user.Email = request.Email ?? user.Email;
             user.FullName = request.FullName ?? user.FullName;
             user.StoreId = request.StoreId;
@@ -281,6 +340,31 @@ namespace AuthService.Controllers
             return Ok(new { Message = isActive ? "Đã mở khóa user." : "Đã khóa user." });
         }
 
+        private List<Claim> BuildUserClaims(ApplicationUser user, IEnumerable<string> userRoles, string storeName)
+        {
+            var authClaims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("UserId", user.Id.ToString()),
+                new Claim("LocationType", user.LocationType ?? string.Empty),
+                new Claim("FullName", user.FullName ?? string.Empty),
+                new Claim("StoreName", storeName)
+            };
+
+            if (user.StoreId.HasValue)
+            {
+                authClaims.Add(new Claim("StoreId", user.StoreId.Value.ToString()));
+            }
+
+            foreach (var role in userRoles)
+            {
+                authClaims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            return authClaims;
+        }
+
         private JwtSecurityToken GenerateJwtToken(List<Claim> authClaims)
         {
             var secretKey = _configuration["JwtSettings:SecretKey"]
@@ -295,6 +379,72 @@ namespace AuthService.Controllers
             );
             return token;
         }
+
+        private ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
+        {
+            var secretKey = _configuration["JwtSettings:SecretKey"]
+                ?? throw new InvalidOperationException("JwtSettings:SecretKey is missing.");
+
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateAudience = true,
+                ValidateIssuer = true,
+                ValidateIssuerSigningKey = true,
+                ValidateLifetime = false,
+                ValidIssuer = _configuration["JwtSettings:Issuer"],
+                ValidAudience = _configuration["JwtSettings:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            try
+            {
+                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
+                if (securityToken is not JwtSecurityToken jwtSecurityToken ||
+                    !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return null;
+                }
+
+                return principal;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private async Task<string> IssueRefreshTokenAsync(ApplicationUser user)
+        {
+            var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+            var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+
+            await _userManager.SetAuthenticationTokenAsync(user, RefreshTokenProvider, RefreshTokenName, refreshToken);
+            await _userManager.SetAuthenticationTokenAsync(user, RefreshTokenProvider, RefreshTokenExpiryName, refreshTokenExpiry.ToString("O"));
+
+            return refreshToken;
+        }
+
+        private async Task RevokeRefreshTokenAsync(ApplicationUser user)
+        {
+            await _userManager.RemoveAuthenticationTokenAsync(user, RefreshTokenProvider, RefreshTokenName);
+            await _userManager.RemoveAuthenticationTokenAsync(user, RefreshTokenProvider, RefreshTokenExpiryName);
+        }
+
+        private static bool RequiresStoreAssignment(string? roleName)
+        {
+            return string.Equals(roleName, "FranchiseStoreStaff", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(roleName, "CentralKitchenStaff", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool RequiresStoreAssignment(IEnumerable<string> roleNames)
+        {
+            return roleNames.Any(RequiresStoreAssignment);
+        }
+
+        private const string RefreshTokenProvider = "AuthService";
+        private const string RefreshTokenName = "RefreshToken";
+        private const string RefreshTokenExpiryName = "RefreshTokenExpiry";
     }
 
     public class LoginRequest
@@ -312,6 +462,7 @@ namespace AuthService.Controllers
         public string LocationType { get; set; } = string.Empty;
         public Guid? StoreId { get; set; }
         public string RoleName { get; set; } = string.Empty;
+        public string? FcmToken { get; set; }
     }
 
     public class UpdateUserRequest
@@ -319,5 +470,11 @@ namespace AuthService.Controllers
         public string? Email { get; set; }
         public string? FullName { get; set; }
         public Guid? StoreId { get; set; }
+    }
+
+    public class RefreshTokenRequest
+    {
+        public string Token { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
     }
 }

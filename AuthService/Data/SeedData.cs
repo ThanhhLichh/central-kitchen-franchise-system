@@ -14,15 +14,21 @@ namespace AuthService.Data
             var kitchenStoreId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
             var franchiseStoreId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
-            if (!await dbContext.Stores.AnyAsync())
+            if (!await dbContext.Stores.AnyAsync(s => s.Id == kitchenStoreId))
             {
-                dbContext.Stores.AddRange(
+                dbContext.Stores.Add(
                     new Store
                     {
                         Id = kitchenStoreId,
                         Name = "Central Kitchen 1",
                         Address = "District 1, Ho Chi Minh City"
-                    },
+                    }
+                );
+            }
+
+            if (!await dbContext.Stores.AnyAsync(s => s.Id == franchiseStoreId))
+            {
+                dbContext.Stores.Add(
                     new Store
                     {
                         Id = franchiseStoreId,
@@ -30,6 +36,10 @@ namespace AuthService.Data
                         Address = "District 3, Ho Chi Minh City"
                     }
                 );
+            }
+
+            if (dbContext.ChangeTracker.HasChanges())
+            {
                 await dbContext.SaveChangesAsync();
             }
 
@@ -134,6 +144,23 @@ namespace AuthService.Data
                 if ((await userManager.CreateAsync(storeUser, "Password@123")).Succeeded)
                 {
                     await userManager.AddToRoleAsync(storeUser, "FranchiseStoreStaff");
+                }
+            }
+
+            
+            if (await userManager.FindByEmailAsync("test@system.com") == null)
+            {
+                var testUser = new ApplicationUser
+                {
+                    UserName = "testuser",
+                    Email = "test@system.com",
+                    FullName = "Test User ASCII",
+                    LocationType = "HQ",
+                    IsActive = true
+                };
+                if ((await userManager.CreateAsync(testUser, "Password@123")).Succeeded)
+                {
+                    await userManager.AddToRoleAsync(testUser, "Admin");
                 }
             }
         }

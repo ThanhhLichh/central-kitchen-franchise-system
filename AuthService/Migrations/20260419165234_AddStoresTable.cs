@@ -24,6 +24,20 @@ namespace AuthService.Migrations
                     table.PrimaryKey("PK_Stores", x => x.Id);
                 });
 
+            migrationBuilder.Sql("""
+                INSERT INTO [Stores] ([Id], [Name], [Address])
+                SELECT DISTINCT [u].[StoreId],
+                       CONCAT(N'Legacy Store ', CONVERT(nvarchar(36), [u].[StoreId])),
+                       N'Migrated placeholder'
+                FROM [AspNetUsers] AS [u]
+                WHERE [u].[StoreId] IS NOT NULL
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM [Stores] AS [s]
+                      WHERE [s].[Id] = [u].[StoreId]
+                  );
+                """);
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetUsers_StoreId",
                 table: "AspNetUsers",

@@ -38,6 +38,12 @@ services:
       
       - ConnectionStrings__RedisCache=redis:6379
 
+      # Firebase credentials – đặt file firebase-adminsdk.json cùng thư mục docker-compose.yml
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-adminsdk.json
+
+    volumes:
+      - ./firebase-adminsdk.json:/app/firebase-adminsdk.json:ro
+
 
 volumes:
   sqlvolume:

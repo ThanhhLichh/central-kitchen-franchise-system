@@ -9,6 +9,7 @@ using AuthService.Data;
 using AuthService.Models;
 using AuthService.Services;
 using AuthService.Middlewares;
+using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,15 +25,20 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>()
 // 3. Cấu hình Redis Cache
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = builder.Configuration.GetConnectionString("RedisCache");
+    options.Configuration = builder.Configuration.GetConnectionString("RedisCache")
+        ?? builder.Configuration.GetConnectionString("Redis")
+        ?? throw new InvalidOperationException("Redis connection string is missing.");
 });
 
 // 4. Khởi tạo Firebase
-if (File.Exists("firebase-adminsdk.json"))
+var firebaseCredentialsPath = Path.Combine(builder.Environment.ContentRootPath, "firebase-adminsdk.json");
+if (File.Exists(firebaseCredentialsPath))
 {
     FirebaseApp.Create(new AppOptions()
     {
-        Credential = GoogleCredential.FromFile("firebase-adminsdk.json") 
+        Credential = CredentialFactory
+            .FromFile<ServiceAccountCredential>(firebaseCredentialsPath)
+            .ToGoogleCredential()
     });
 }
 
@@ -64,6 +70,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddOpenApi();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -75,12 +82,18 @@ builder.Services.AddCors(options =>
 });
 var app = builder.Build();
 
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
         var db = services.GetRequiredService<AuthDbContext>();
+        await EnsureStoresMigrationForLegacyDatabaseAsync(db);
         db.Database.Migrate(); 
         Console.WriteLine("----> Database đã được cập nhật thành công!");
 
@@ -100,3 +113,79 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+
+static async Task EnsureStoresMigrationForLegacyDatabaseAsync(AuthDbContext db)
+{
+    const string storesTableCheckSql = "SELECT COUNT(1) FROM sys.tables WHERE name = 'Stores';";
+    var connection = (SqlConnection)db.Database.GetDbConnection();
+
+    if (connection.State != System.Data.ConnectionState.Open)
+    {
+        await connection.OpenAsync();
+    }
+
+    await using var command = connection.CreateCommand();
+    command.CommandText = storesTableCheckSql;
+    var storesTableExists = Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
+    if (storesTableExists)
+    {
+        return;
+    }
+
+    var ensureStoresMigrationSql = """
+        IF OBJECT_ID(N'[Stores]') IS NULL
+        BEGIN
+            CREATE TABLE [Stores] (
+                [Id] uniqueidentifier NOT NULL,
+                [Name] nvarchar(max) NOT NULL,
+                [Address] nvarchar(max) NOT NULL,
+                CONSTRAINT [PK_Stores] PRIMARY KEY ([Id])
+            );
+        END;
+
+        INSERT INTO [Stores] ([Id], [Name], [Address])
+        SELECT DISTINCT [u].[StoreId],
+               CONCAT(N'Legacy Store ', CONVERT(nvarchar(36), [u].[StoreId])),
+               N'Migrated placeholder'
+        FROM [AspNetUsers] AS [u]
+        WHERE [u].[StoreId] IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1
+              FROM [Stores] AS [s]
+              WHERE [s].[Id] = [u].[StoreId]
+          );
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM sys.indexes
+            WHERE name = 'IX_AspNetUsers_StoreId'
+              AND object_id = OBJECT_ID(N'[AspNetUsers]')
+        )
+        BEGIN
+            CREATE INDEX [IX_AspNetUsers_StoreId] ON [AspNetUsers] ([StoreId]);
+        END;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM sys.foreign_keys
+            WHERE name = 'FK_AspNetUsers_Stores_StoreId'
+        )
+        BEGIN
+            ALTER TABLE [AspNetUsers]
+            ADD CONSTRAINT [FK_AspNetUsers_Stores_StoreId]
+            FOREIGN KEY ([StoreId]) REFERENCES [Stores] ([Id]) ON DELETE SET NULL;
+        END;
+
+        IF NOT EXISTS (
+            SELECT 1
+            FROM [__EFMigrationsHistory]
+            WHERE [MigrationId] = N'20260419165234_AddStoresTable'
+        )
+        BEGIN
+            INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+            VALUES (N'20260419165234_AddStoresTable', N'9.0.0');
+        END;
+        """;
+
+    await db.Database.ExecuteSqlRawAsync(ensureStoresMigrationSql);
+}
