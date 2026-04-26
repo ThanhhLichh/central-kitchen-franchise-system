@@ -84,6 +84,7 @@ tbody td {
   border-bottom: 1px solid #f1f5f9;
   color: #0f172a;
   font-size: 14px;
+  vertical-align: middle;
 }
 
 .highlight-cell {
@@ -98,7 +99,8 @@ tbody td {
 }
 
 .view-btn,
-.process-btn {
+.process-btn,
+.delivery-btn {
   border: none;
   border-radius: 10px;
   padding: 9px 12px;
@@ -106,6 +108,13 @@ tbody td {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  transition: all 0.2s ease;
+}
+
+.view-btn:hover,
+.process-btn:hover,
+.delivery-btn:hover {
+  transform: translateY(-1px);
 }
 
 .view-btn {
@@ -118,15 +127,29 @@ tbody td {
   color: #059669;
 }
 
-.processing-pill {
+.delivery-btn {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.processing-pill,
+.delivery-created-pill {
   display: inline-flex;
   align-items: center;
   padding: 8px 12px;
   border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
   font-size: 12px;
   font-weight: 700;
+}
+
+.processing-pill {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.delivery-created-pill {
+  background: #ecfdf5;
+  color: #059669;
 }
 
 .btn-icon {
@@ -156,4 +179,30 @@ tbody td {
 .empty-row {
   text-align: center;
   color: #94a3b8;
+}
+.status-badge.waiting_production {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.waiting-production-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.done-production-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
 }

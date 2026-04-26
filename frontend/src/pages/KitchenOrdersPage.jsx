@@ -5,13 +5,19 @@ import { getProductsApi } from "../api/inventoryApi";
 import axiosClient from "../api/axios";
 import { ORDER_API } from "../api/config";
 import KitchenOrderDetailModal from "../components/KitchenOrderDetailModal";
-import { FiEye, FiPlay } from "react-icons/fi";
+import { FiEye, FiPlay, FiTruck } from "react-icons/fi";
 import "./KitchenOrdersPage.css";
-import { getStoresApi, } from "../api/adminApi";
+import { getStoresApi } from "../api/adminApi";
+import { getDeliveriesApi } from "../api/deliveryApi";
+import CreateDeliveryModal from "../components/CreateDeliveryModal";
+import { getProductionPlansApi } from "../api/productionApi";
 
 function KitchenOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [deliveries, setDeliveries] = useState([]);
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -21,48 +27,78 @@ function KitchenOrdersPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailLoadingId, setDetailLoadingId] = useState(null);
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [plans, setPlans] = useState([]);
 
-  const [stores, setStores] = useState([]);
+  const [createDeliveryOrder, setCreateDeliveryOrder] = useState(null);
+  const [isCreateDeliveryOpen, setIsCreateDeliveryOpen] = useState(false);
 
   const fetchData = async () => {
     try {
-        setLoading(true);
-        setError("");
+      setLoading(true);
+      setError("");
 
-        const [ordersData, productsData, storesData] = await Promise.all([
-        getOrdersApi(),
-        getProductsApi(),
-        getStoresApi(),
+      const [ordersData, productsData, storesData, deliveriesData, plansData] =
+        await Promise.all([
+          getOrdersApi(),
+          getProductsApi(),
+          getStoresApi(),
+          getDeliveriesApi(),
+          getProductionPlansApi(),
         ]);
 
-        const normalizedOrders = Array.isArray(ordersData) ? ordersData : [];
-        const normalizedProducts = Array.isArray(productsData) ? productsData : [];
-        const normalizedStores = Array.isArray(storesData) ? storesData : [];
+      const normalizedPlans = Array.isArray(plansData) ? plansData : [];
+      
 
-        const filteredOrders = normalizedOrders.filter(
-        (order) => order.status === "pending" || order.status === "processing"
-        );
+      const normalizedOrders = Array.isArray(ordersData) ? ordersData : [];
+      const normalizedProducts = Array.isArray(productsData) ? productsData : [];
+      const normalizedStores = Array.isArray(storesData) ? storesData : [];
+      const normalizedDeliveries = Array.isArray(deliveriesData)
+        ? deliveriesData
+        : [];
 
-        setOrders(filteredOrders);
-        setProducts(normalizedProducts);
-        setStores(normalizedStores);
+      const filteredOrders = normalizedOrders.filter(
+        (order) =>
+          order.status === "pending" ||
+          order.status === "waiting_production" ||
+          order.status === "processing"
+      );
+      setPlans(normalizedPlans);
+      setOrders(filteredOrders);
+      setProducts(normalizedProducts);
+      setStores(normalizedStores);
+      setDeliveries(normalizedDeliveries);
     } catch (err) {
-        console.error(err);
-        setError("Không tải được đơn hàng cần xử lý.");
+      console.error(err);
+      setError("Không tải được đơn hàng cần xử lý.");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-    };
-    const storeMap = useMemo(() => {
-        return stores.reduce((acc, store) => {
-            acc[store.id] = store;
-            return acc;
-        }, {});
-        }, [stores]);
+  };
 
-        useEffect(() => {
-            fetchData();
-        }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const planMapByOrderId = useMemo(() => {
+  return plans.reduce((acc, plan) => {
+    acc[plan.orderId] = plan;
+    return acc;
+  }, {});
+}, [plans]);
+
+  const deliveryMapByOrderId = useMemo(() => {
+    return deliveries.reduce((acc, delivery) => {
+      acc[delivery.order_id] = delivery;
+      return acc;
+    }, {});
+  }, [deliveries]);
+
+  const storeMap = useMemo(() => {
+    return stores.reduce((acc, store) => {
+      acc[store.id] = store;
+      return acc;
+    }, {});
+  }, [stores]);
 
   const productsMap = useMemo(() => {
     return products.reduce((acc, product) => {
@@ -121,7 +157,7 @@ function KitchenOrdersPage() {
           <div>
             <h1 className="kitchen-orders-title">Đơn hàng cần xử lý</h1>
             <p className="kitchen-orders-subtitle">
-              Theo dõi các đơn mới từ cửa hàng và bắt đầu xử lý ngay tại bếp trung tâm
+              Theo dõi các đơn từ cửa hàng, bao gồm cả đơn chờ sản xuất
             </p>
           </div>
         </div>
@@ -142,6 +178,7 @@ function KitchenOrdersPage() {
           >
             <option value="all">Tất cả trạng thái</option>
             <option value="pending">Pending</option>
+            <option value="waiting_production">Waiting Production</option>
             <option value="processing">Processing</option>
           </select>
         </div>
@@ -212,9 +249,57 @@ function KitchenOrdersPage() {
                               </button>
                             )}
 
+                            {order.status === "waiting_production" && !planMapByOrderId[order.id] && (
+                                <span className="waiting-production-pill">
+                                  Chờ coordinator tạo sản xuất
+                                </span>
+                              )}
+
+                              {order.status === "waiting_production" &&
+                                planMapByOrderId[order.id]?.status === "pending" && (
+                                  <span className="waiting-production-pill">
+                                    Đang chờ nhận lệnh sản xuất
+                                  </span>
+                              )}
+
+                              {order.status === "waiting_production" &&
+                                planMapByOrderId[order.id]?.status === "processing" && (
+                                  <span className="processing-pill">
+                                    Đang sản xuất
+                                  </span>
+                              )}
+
+                              {order.status === "waiting_production" &&
+                                planMapByOrderId[order.id]?.status === "done" && (
+                                  <span className="done-production-pill">
+                                    Đã hoàn tất sản xuất
+                                  </span>
+                              )}
+
                             {order.status === "processing" && (
                               <span className="processing-pill">Đang xử lý</span>
                             )}
+
+                            {order.status === "processing" &&
+                              !deliveryMapByOrderId[order.id] && (
+                                <button
+                                  className="delivery-btn"
+                                  onClick={() => {
+                                    setCreateDeliveryOrder(order);
+                                    setIsCreateDeliveryOpen(true);
+                                  }}
+                                >
+                                  <FiTruck className="btn-icon" />
+                                  Giao cho bên vận chuyển
+                                </button>
+                              )}
+
+                            {order.status === "processing" &&
+                              deliveryMapByOrderId[order.id] && (
+                                <span className="delivery-created-pill">
+                                  Đã tạo giao hàng
+                                </span>
+                              )}
                           </div>
                         </td>
                       </tr>
@@ -231,12 +316,22 @@ function KitchenOrdersPage() {
         order={selectedOrder}
         open={isDetailOpen}
         onClose={() => {
-            setIsDetailOpen(false);
-            setSelectedOrder(null);
+          setIsDetailOpen(false);
+          setSelectedOrder(null);
         }}
         productsMap={productsMap}
         storeMap={storeMap}
-        />
+      />
+
+      <CreateDeliveryModal
+        open={isCreateDeliveryOpen}
+        order={createDeliveryOrder}
+        onClose={() => {
+          setIsCreateDeliveryOpen(false);
+          setCreateDeliveryOrder(null);
+        }}
+        onCreated={fetchData}
+      />
     </Layout>
   );
 }

@@ -311,3 +311,12 @@ tbody td {
     font-size: 26px;
   }
 }
+.kitchen-stat-card.waiting-production .stat-icon-wrap {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.status-badge.waiting_production {
+  background: #fef3c7;
+  color: #b45309;
+}

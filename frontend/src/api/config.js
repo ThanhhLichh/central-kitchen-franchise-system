@@ -29,5 +29,22 @@ export const INVENTORY_API = {
   GET_PRODUCTS: `${GATEWAY_BASE_URL}/products`,
   CHECK_STOCK: `${GATEWAY_BASE_URL}/check-stock`,
   IMPORT: `${GATEWAY_BASE_URL}/inventory/import`,
+  EXPORT: `${GATEWAY_BASE_URL}/inventory/export`,
+  STORE_IMPORT: `${GATEWAY_BASE_URL}/inventory/store/import`,
   GET_STORE_INVENTORY: (storeId) => `${GATEWAY_BASE_URL}/inventory/store/${storeId}`,
+  CREATE_PRODUCT: `${GATEWAY_BASE_URL}/products`,
+};
+
+export const DELIVERY_API = {
+  GET_ALL: `${GATEWAY_BASE_URL}/deliveries`,
+  GET_BY_ID: (id) => `${GATEWAY_BASE_URL}/deliveries/${id}`,
+  CREATE: `${GATEWAY_BASE_URL}/deliveries`,
+  UPDATE: (id) => `${GATEWAY_BASE_URL}/deliveries/${id}`,
+  UPDATE_STATUS: (id) => `${GATEWAY_BASE_URL}/deliveries/${id}/status`,
+};
+
+export const PRODUCTION_API = {
+  GET_ALL: `${GATEWAY_BASE_URL}/production-plan`,
+  CREATE: `${GATEWAY_BASE_URL}/production-plan`,
+  UPDATE_STATUS: `${GATEWAY_BASE_URL}/production-status`,
 };

@@ -23,10 +23,10 @@ function OrderDetailModal({ order, open, onClose, storeName, username, productsM
             <strong>ORD-{order.id}</strong>
           </div>
 
-          <div className="info-card">
+          {/* <div className="info-card">
             <span>Tạo bởi</span>
             <strong>{order.created_by || username || "N/A"}</strong>
-          </div>
+          </div> */}
 
           <div className="info-card">
             <span>Tên cửa hàng</span>

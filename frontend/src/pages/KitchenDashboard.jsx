@@ -11,6 +11,7 @@ import {
   FiRefreshCw,
   FiPackage,
   FiArrowRight,
+  FiTool,
 } from "react-icons/fi";
 import "./KitchenDashboard.css";
 import { getStoresApi } from "../api/adminApi";
@@ -18,49 +19,52 @@ import { getStoresApi } from "../api/adminApi";
 function KitchenDashboard() {
   const navigate = useNavigate();
   const fullName =
-    localStorage.getItem("fullName") || localStorage.getItem("username") || "Nhân viên bếp";
+    localStorage.getItem("fullName") ||
+    localStorage.getItem("username") ||
+    "Nhân viên bếp";
 
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [products, setProducts] = useState([]);
+  const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [stores, setStores] = useState([]);
-  
 
   const fetchDashboardData = async () => {
     try {
-        setLoading(true);
-        setError("");
+      setLoading(true);
+      setError("");
 
-        const [ordersData, inventoryData, productsData, storesData] = await Promise.all([
-        getOrdersApi(),
-        axiosClient.get(INVENTORY_API.GET_ALL),
-        getProductsApi(),
-        getStoresApi(),
+      const [ordersData, inventoryRes, productsData, storesData] =
+        await Promise.all([
+          getOrdersApi(),
+          axiosClient.get(INVENTORY_API.GET_ALL),
+          getProductsApi(),
+          getStoresApi(),
         ]);
 
-        setOrders(Array.isArray(ordersData) ? ordersData : []);
-        setInventory(Array.isArray(inventoryData.data) ? inventoryData.data : []);
-        setProducts(Array.isArray(productsData) ? productsData : []);
-        setStores(Array.isArray(storesData) ? storesData : []);
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
+      setInventory(Array.isArray(inventoryRes.data) ? inventoryRes.data : []);
+      setProducts(Array.isArray(productsData) ? productsData : []);
+      setStores(Array.isArray(storesData) ? storesData : []);
     } catch (err) {
-        console.error(err);
-        setError("Không tải được dữ liệu tổng quan bếp trung tâm.");
+      console.error(err);
+      setError("Không tải được dữ liệu tổng quan bếp trung tâm.");
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-    };
-  const storeMap = useMemo(() => {
-    return stores.reduce((acc, store) => {
-        acc[store.id] = store;
-        return acc;
-    }, {});
-    }, [stores]);
+  };
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const storeMap = useMemo(() => {
+    return stores.reduce((acc, store) => {
+      acc[store.id] = store;
+      return acc;
+    }, {});
+  }, [stores]);
 
   const productMap = useMemo(() => {
     return products.reduce((acc, product) => {
@@ -72,7 +76,12 @@ function KitchenDashboard() {
   const stats = useMemo(() => {
     const totalOrders = orders.length;
     const pendingOrders = orders.filter((o) => o.status === "pending").length;
-    const processingOrders = orders.filter((o) => o.status === "processing").length;
+    const waitingProductionOrders = orders.filter(
+      (o) => o.status === "waiting_production"
+    ).length;
+    const processingOrders = orders.filter(
+      (o) => o.status === "processing"
+    ).length;
     const totalInventoryItems = inventory.reduce(
       (sum, item) => sum + Number(item.quantity || 0),
       0
@@ -81,6 +90,7 @@ function KitchenDashboard() {
     return {
       totalOrders,
       pendingOrders,
+      waitingProductionOrders,
       processingOrders,
       totalInventoryItems,
     };
@@ -104,12 +114,15 @@ function KitchenDashboard() {
             <span className="kitchen-badge">Central Kitchen</span>
             <h1>Tổng quan bếp trung tâm</h1>
             <p>
-              Xin chào <strong>{fullName}</strong>. Theo dõi nhanh tình trạng đơn hàng,
-              tiến độ xử lý và tồn kho hiện tại của bếp trung tâm.
+              Xin chào <strong>{fullName}</strong>. Theo dõi nhanh tình trạng đơn
+              hàng, tiến độ xử lý và tồn kho hiện tại của bếp trung tâm.
             </p>
           </div>
 
-          <button className="kitchen-primary-btn" onClick={() => navigate("/kitchen/orders")}>
+          <button
+            className="kitchen-primary-btn"
+            onClick={() => navigate("/kitchen/orders")}
+          >
             Xem đơn cần xử lý
             <FiArrowRight />
           </button>
@@ -139,6 +152,16 @@ function KitchenDashboard() {
                 <div>
                   <p>Đơn mới</p>
                   <h2>{stats.pendingOrders}</h2>
+                </div>
+              </div>
+
+              <div className="kitchen-stat-card waiting-production">
+                <div className="stat-icon-wrap">
+                  <FiTool />
+                </div>
+                <div>
+                  <p>Chờ sản xuất</p>
+                  <h2>{stats.waitingProductionOrders}</h2>
                 </div>
               </div>
 
@@ -201,10 +224,16 @@ function KitchenDashboard() {
                         latestOrders.map((order) => (
                           <tr key={order.id}>
                             <td className="highlight-cell">ORD-{order.id}</td>
-                            <td>{storeMap[order.store_id]?.name || order.store_id || "--"}</td>
+                            <td>
+                              {storeMap[order.store_id]?.name ||
+                                order.store_id ||
+                                "--"}
+                            </td>
                             <td>
                               {order.created_at
-                                ? new Date(order.created_at).toLocaleDateString("vi-VN")
+                                ? new Date(order.created_at).toLocaleDateString(
+                                    "vi-VN"
+                                  )
                                 : "--/--/----"}
                             </td>
                             <td>
@@ -225,7 +254,9 @@ function KitchenDashboard() {
                 <div className="panel-head">
                   <div>
                     <h3>Tồn kho sắp thấp</h3>
-                    <span>Những nguyên liệu cần ưu tiên kiểm tra hoặc nhập thêm</span>
+                    <span>
+                      Những nguyên liệu cần ưu tiên kiểm tra hoặc nhập thêm
+                    </span>
                   </div>
 
                   <button
@@ -238,13 +269,20 @@ function KitchenDashboard() {
 
                 <div className="low-stock-list">
                   {lowStockItems.length === 0 ? (
-                    <p className="empty-low-stock">Hiện chưa có nguyên liệu nào ở mức thấp.</p>
+                    <p className="empty-low-stock">
+                      Hiện chưa có nguyên liệu nào ở mức thấp.
+                    </p>
                   ) : (
                     lowStockItems.map((item, index) => (
                       <div className="low-stock-item" key={index}>
                         <div>
-                          <h4>{productMap[item.product_id]?.name || `Sản phẩm #${item.product_id}`}</h4>
-                          <p>Đơn vị: {productMap[item.product_id]?.unit || "--"}</p>
+                          <h4>
+                            {productMap[item.product_id]?.name ||
+                              `Sản phẩm #${item.product_id}`}
+                          </h4>
+                          <p>
+                            Đơn vị: {productMap[item.product_id]?.unit || "--"}
+                          </p>
                         </div>
                         <span className="low-stock-qty">{item.quantity}</span>
                       </div>

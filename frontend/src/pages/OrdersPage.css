@@ -158,3 +158,55 @@ tbody td {
     width: 100%;
   }
 }
+
+.order-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.delivery-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.delivery-badge.pending {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.delivery-badge.shipping {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.delivery-badge.delivered {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.delivery-badge.none {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.receive-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  background: #ecfdf5;
+  color: #059669;
+}
+.status-badge.waiting_production {
+  background: #fef3c7;
+  color: #b45309;
+}
