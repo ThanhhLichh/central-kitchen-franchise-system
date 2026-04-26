@@ -207,7 +207,7 @@ tbody td {
 
 /* màu riêng từng box */
 .stat-card.total {
-  background: linear-gradient(135deg, #ff6060, #910505);
+  background: linear-gradient(135deg, #ff60ca, #ad04a8);
   color: #fff;
 }
 
@@ -225,7 +225,15 @@ tbody td {
   background: linear-gradient(135deg, #34d399, #02855a);
   color: #fff;
 }
+.stat-card.cancelled {
+  background: linear-gradient(135deg, #ff6060, #910505);
+  color: #fff;
+}
 
+.status-badge.cancelled {
+  background: #fee2e2;
+  color: #b91c1c;
+}
 /* fix màu text */
 .stat-card h2,
 .stat-card p {

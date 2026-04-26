@@ -5,6 +5,7 @@ import { INVENTORY_API } from "../api/config";
 import { getProductsApi } from "../api/inventoryApi";
 import ImportStockModal from "../components/ImportStockModal";
 import CheckStockModal from "../components/CheckStockModal";
+import Pagination from "../components/Pagination";
 import { FiPlus, FiSearch } from "react-icons/fi";
 import "./CentralInventoryPage.css";
 
@@ -17,6 +18,9 @@ function CentralInventoryPage() {
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isCheckOpen, setIsCheckOpen] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   const fetchInventoryData = async () => {
     try {
@@ -63,6 +67,17 @@ function CentralInventoryPage() {
     });
   }, [inventory, search, productsMap]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  const totalPages = Math.ceil(filteredInventory.length / itemsPerPage);
+
+  const paginatedInventory = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredInventory.slice(start, start + itemsPerPage);
+  }, [filteredInventory, currentPage]);
+
   return (
     <Layout>
       <div className="central-inventory-page">
@@ -103,51 +118,59 @@ function CentralInventoryPage() {
           ) : error ? (
             <div className="inventory-state error">{error}</div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Product ID</th>
-                    <th>Tên sản phẩm</th>
-                    <th>Đơn vị</th>
-                    <th>Số lượng</th>
-                    <th>Trạng thái</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredInventory.length === 0 ? (
+            <>
+              <div className="table-wrap">
+                <table>
+                  <thead>
                     <tr>
-                      <td colSpan="5" className="empty-row">
-                        Không có dữ liệu tồn kho phù hợp.
-                      </td>
+                      <th>Product ID</th>
+                      <th>Tên sản phẩm</th>
+                      <th>Đơn vị</th>
+                      <th>Số lượng</th>
+                      <th>Trạng thái</th>
                     </tr>
-                  ) : (
-                    filteredInventory.map((item, index) => {
-                      const product = productsMap[item.product_id];
-                      const quantity = Number(item.quantity || 0);
-                      const isLow = quantity <= 20;
+                  </thead>
 
-                      return (
-                        <tr key={index}>
-                          <td>{item.product_id}</td>
-                          <td className="highlight-cell">
-                            {product?.name || "Chưa có tên"}
-                          </td>
-                          <td>{product?.unit || "--"}</td>
-                          <td>{quantity}</td>
-                          <td>
-                            <span className={isLow ? "low-stock-badge" : "normal-stock-badge"}>
-                              {isLow ? "Sắp thấp" : "Ổn định"}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  <tbody>
+                    {paginatedInventory.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="empty-row">
+                          Không có dữ liệu tồn kho phù hợp.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedInventory.map((item, index) => {
+                        const product = productsMap[item.product_id];
+                        const quantity = Number(item.quantity || 0);
+                        const isLow = quantity <= 20;
+
+                        return (
+                          <tr key={`${item.product_id}-${index}`}>
+                            <td>{item.product_id}</td>
+                            <td className="highlight-cell">
+                              {product?.name || "Chưa có tên"}
+                            </td>
+                            <td>{product?.unit || "--"}</td>
+                            <td>{quantity}</td>
+                            <td>
+                              <span className={isLow ? "low-stock-badge" : "normal-stock-badge"}>
+                                {isLow ? "Sắp thấp" : "Ổn định"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages || 1}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </>
           )}
         </div>
 

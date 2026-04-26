@@ -8,7 +8,7 @@ import {
   FaClock,
   FaSpinner,
   FaCheckCircle,
-  FaTools,
+  FaTimesCircle,
 } from "react-icons/fa";
 
 function Dashboard() {
@@ -59,8 +59,16 @@ function Dashboard() {
     ).length;
     const processing = orders.filter((o) => o.status === "processing").length;
     const completed = orders.filter((o) => o.status === "completed").length;
+    const cancelled = orders.filter((o) => o.status === "cancelled").length;
 
-    return { total, pending, waitingProduction, processing, completed };
+    return {
+      total,
+      pending,
+      waitingProduction,
+      processing,
+      completed,
+      cancelled,
+    };
   }, [orders]);
 
   const recentOrders = useMemo(() => {
@@ -116,16 +124,6 @@ function Dashboard() {
                 </div>
               </div>
 
-              {/* <div className="stat-card waiting-production">
-                <div className="stat-content">
-                  <div>
-                    <p>Chờ sản xuất</p>
-                    <h2>{stats.waitingProduction}</h2>
-                  </div>
-                  <FaTools className="stat-icon" />
-                </div>
-              </div> */}
-
               <div className="stat-card processing">
                 <div className="stat-content">
                   <div>
@@ -143,6 +141,16 @@ function Dashboard() {
                     <h2>{stats.completed}</h2>
                   </div>
                   <FaCheckCircle className="stat-icon" />
+                </div>
+              </div>
+
+              <div className="stat-card cancelled">
+                <div className="stat-content">
+                  <div>
+                    <p>Đã hủy</p>
+                    <h2>{stats.cancelled}</h2>
+                  </div>
+                  <FaTimesCircle className="stat-icon" style={{ opacity: 1 }} />
                 </div>
               </div>
             </div>

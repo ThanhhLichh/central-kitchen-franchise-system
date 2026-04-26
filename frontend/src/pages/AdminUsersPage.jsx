@@ -9,6 +9,7 @@ import {
 import UserDetailModal from "../components/UserDetailModal";
 import CreateUserModal from "../components/CreateUserModal";
 import EditUserModal from "../components/EditUserModal";
+import Pagination from "../components/Pagination";
 import { FiEye, FiLock, FiUnlock, FiEdit2 } from "react-icons/fi";
 import "./AdminUsersPage.css";
 
@@ -24,6 +25,9 @@ function AdminUsersPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const fetchUsers = async () => {
     try {
@@ -61,6 +65,17 @@ function AdminUsersPage() {
       return matchSearch && matchRole;
     });
   }, [users, search, roleFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, roleFilter]);
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredUsers.slice(start, start + itemsPerPage);
+  }, [filteredUsers, currentPage]);
 
   const handleViewDetail = async (id) => {
     try {
@@ -138,93 +153,101 @@ function AdminUsersPage() {
           ) : error ? (
             <div className="state-box error">{error}</div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Username</th>
-                    <th>Họ tên</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredUsers.length === 0 ? (
+            <>
+              <div className="table-wrap">
+                <table>
+                  <thead>
                     <tr>
-                      <td colSpan="6" className="empty-row">
-                        Không có người dùng phù hợp.
-                      </td>
+                      <th>Username</th>
+                      <th>Họ tên</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Trạng thái</th>
+                      <th>Hành động</th>
                     </tr>
-                  ) : (
-                    filteredUsers.map((user) => (
-                      <tr key={user.id}>
-                        <td className="username-cell">{user.userName}</td>
-                        <td>{user.fullName || "--"}</td>
-                        <td>{user.email || "--"}</td>
-                        <td>
-                          <span className="role-badge">
-                            {user.roles?.[0] || "--"}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={
-                              user.isActive ? "active-badge" : "locked-badge"
-                            }
-                          >
-                            {user.isActive ? "Active" : "Locked"}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="actions">
-                            <button
-                              className="view-btn"
-                              onClick={() => handleViewDetail(user.id)}
-                            >
-                              <FiEye style={{ marginRight: 6 }} />
-                              Xem
-                            </button>
+                  </thead>
 
-                            <button
-                              type="button"
-                              className="edit-btn"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingUserId(user.id);
-                                setIsEditOpen(true);
-                              }}
-                            >
-                              <FiEdit2 style={{ marginRight: 6 }} />
-                              Sửa
-                            </button>
-
-                            <button
-                              className={user.isActive ? "lock-btn" : "unlock-btn"}
-                              onClick={() => handleToggleLock(user)}
-                            >
-                              {user.isActive ? (
-                                <>
-                                  <FiLock style={{ marginRight: 6 }} />
-                                  Khóa
-                                </>
-                              ) : (
-                                <>
-                                  <FiUnlock style={{ marginRight: 6 }} />
-                                  Mở khóa
-                                </>
-                              )}
-                            </button>
-                          </div>
+                  <tbody>
+                    {paginatedUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="empty-row">
+                          Không có người dùng phù hợp.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      paginatedUsers.map((user) => (
+                        <tr key={user.id}>
+                          <td className="username-cell">{user.userName}</td>
+                          <td>{user.fullName || "--"}</td>
+                          <td>{user.email || "--"}</td>
+                          <td>
+                            <span className="role-badge">
+                              {user.roles?.[0] || "--"}
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              className={
+                                user.isActive ? "active-badge" : "locked-badge"
+                              }
+                            >
+                              {user.isActive ? "Active" : "Locked"}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="actions">
+                              <button
+                                className="view-btn"
+                                onClick={() => handleViewDetail(user.id)}
+                              >
+                                <FiEye style={{ marginRight: 6 }} />
+                                Xem
+                              </button>
+
+                              <button
+                                type="button"
+                                className="edit-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingUserId(user.id);
+                                  setIsEditOpen(true);
+                                }}
+                              >
+                                <FiEdit2 style={{ marginRight: 6 }} />
+                                Sửa
+                              </button>
+
+                              <button
+                                className={user.isActive ? "lock-btn" : "unlock-btn"}
+                                onClick={() => handleToggleLock(user)}
+                              >
+                                {user.isActive ? (
+                                  <>
+                                    <FiLock style={{ marginRight: 6 }} />
+                                    Khóa
+                                  </>
+                                ) : (
+                                  <>
+                                    <FiUnlock style={{ marginRight: 6 }} />
+                                    Mở khóa
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages || 1}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </>
           )}
         </div>
 

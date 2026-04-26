@@ -5,6 +5,7 @@ import { getProductsApi } from "../api/inventoryApi";
 import axiosClient from "../api/axios";
 import { ORDER_API } from "../api/config";
 import KitchenOrderDetailModal from "../components/KitchenOrderDetailModal";
+import Pagination from "../components/Pagination";
 import { FiEye, FiPlay, FiTruck } from "react-icons/fi";
 import "./KitchenOrdersPage.css";
 import { getStoresApi } from "../api/adminApi";
@@ -17,6 +18,7 @@ function KitchenOrdersPage() {
   const [products, setProducts] = useState([]);
   const [stores, setStores] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
+  const [plans, setPlans] = useState([]);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -27,10 +29,12 @@ function KitchenOrdersPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [detailLoadingId, setDetailLoadingId] = useState(null);
   const [actionLoadingId, setActionLoadingId] = useState(null);
-  const [plans, setPlans] = useState([]);
 
   const [createDeliveryOrder, setCreateDeliveryOrder] = useState(null);
   const [isCreateDeliveryOpen, setIsCreateDeliveryOpen] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const fetchData = async () => {
     try {
@@ -47,8 +51,6 @@ function KitchenOrdersPage() {
         ]);
 
       const normalizedPlans = Array.isArray(plansData) ? plansData : [];
-      
-
       const normalizedOrders = Array.isArray(ordersData) ? ordersData : [];
       const normalizedProducts = Array.isArray(productsData) ? productsData : [];
       const normalizedStores = Array.isArray(storesData) ? storesData : [];
@@ -62,6 +64,7 @@ function KitchenOrdersPage() {
           order.status === "waiting_production" ||
           order.status === "processing"
       );
+
       setPlans(normalizedPlans);
       setOrders(filteredOrders);
       setProducts(normalizedProducts);
@@ -80,11 +83,11 @@ function KitchenOrdersPage() {
   }, []);
 
   const planMapByOrderId = useMemo(() => {
-  return plans.reduce((acc, plan) => {
-    acc[plan.orderId] = plan;
-    return acc;
-  }, {});
-}, [plans]);
+    return plans.reduce((acc, plan) => {
+      acc[plan.orderId] = plan;
+      return acc;
+    }, {});
+  }, [plans]);
 
   const deliveryMapByOrderId = useMemo(() => {
     return deliveries.reduce((acc, delivery) => {
@@ -119,6 +122,17 @@ function KitchenOrdersPage() {
       return matchesSearch && matchesStatus;
     });
   }, [orders, search, statusFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredOrders.slice(start, start + itemsPerPage);
+  }, [filteredOrders, currentPage]);
 
   const handleViewDetail = async (orderId) => {
     try {
@@ -189,125 +203,134 @@ function KitchenOrdersPage() {
           ) : error ? (
             <div className="kitchen-orders-state error">{error}</div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Mã đơn</th>
-                    <th>Tên cửa hàng</th>
-                    <th>Ngày tạo</th>
-                    <th>Trạng thái</th>
-                    <th>Số mặt hàng</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredOrders.length === 0 ? (
+            <>
+              <div className="table-wrap">
+                <table>
+                  <thead>
                     <tr>
-                      <td colSpan="6" className="empty-row">
-                        Không có đơn hàng phù hợp.
-                      </td>
+                      <th>Mã đơn</th>
+                      <th>Tên cửa hàng</th>
+                      <th>Ngày tạo</th>
+                      <th>Trạng thái</th>
+                      <th>Số mặt hàng</th>
+                      <th>Hành động</th>
                     </tr>
-                  ) : (
-                    filteredOrders.map((order) => (
-                      <tr key={order.id}>
-                        <td className="highlight-cell">ORD-{order.id}</td>
-                        <td>{storeMap[order.store_id]?.name || order.store_id || "--"}</td>
-                        <td>
-                          {order.created_at
-                            ? new Date(order.created_at).toLocaleDateString("vi-VN")
-                            : "--/--/----"}
-                        </td>
-                        <td>
-                          <span className={`status-badge ${order.status}`}>
-                            {order.status}
-                          </span>
-                        </td>
-                        <td>{order.items?.length || 0}</td>
-                        <td>
-                          <div className="kitchen-actions">
-                            <button
-                              className="view-btn"
-                              onClick={() => handleViewDetail(order.id)}
-                              disabled={detailLoadingId === order.id}
-                            >
-                              <FiEye className="btn-icon" />
-                              {detailLoadingId === order.id ? "Đang tải..." : "Xem"}
-                            </button>
+                  </thead>
 
-                            {order.status === "pending" && (
+                  <tbody>
+                    {paginatedOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="empty-row">
+                          Không có đơn hàng phù hợp.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedOrders.map((order) => (
+                        <tr key={order.id}>
+                          <td className="highlight-cell">ORD-{order.id}</td>
+                          <td>{storeMap[order.store_id]?.name || order.store_id || "--"}</td>
+                          <td>
+                            {order.created_at
+                              ? new Date(order.created_at).toLocaleDateString("vi-VN")
+                              : "--/--/----"}
+                          </td>
+                          <td>
+                            <span className={`status-badge ${order.status}`}>
+                              {order.status}
+                            </span>
+                          </td>
+                          <td>{order.items?.length || 0}</td>
+                          <td>
+                            <div className="kitchen-actions">
                               <button
-                                className="process-btn"
-                                onClick={() => handleStartProcessing(order.id)}
-                                disabled={actionLoadingId === order.id}
+                                className="view-btn"
+                                onClick={() => handleViewDetail(order.id)}
+                                disabled={detailLoadingId === order.id}
                               >
-                                <FiPlay className="btn-icon" />
-                                {actionLoadingId === order.id
-                                  ? "Đang cập nhật..."
-                                  : "Nhận xử lý"}
+                                <FiEye className="btn-icon" />
+                                {detailLoadingId === order.id ? "Đang tải..." : "Xem"}
                               </button>
-                            )}
 
-                            {order.status === "waiting_production" && !planMapByOrderId[order.id] && (
-                                <span className="waiting-production-pill">
-                                  Chờ coordinator tạo sản xuất
-                                </span>
+                              {order.status === "pending" && (
+                                <button
+                                  className="process-btn"
+                                  onClick={() => handleStartProcessing(order.id)}
+                                  disabled={actionLoadingId === order.id}
+                                >
+                                  <FiPlay className="btn-icon" />
+                                  {actionLoadingId === order.id
+                                    ? "Đang cập nhật..."
+                                    : "Nhận xử lý"}
+                                </button>
                               )}
+
+                              {order.status === "waiting_production" &&
+                                !planMapByOrderId[order.id] && (
+                                  <span className="waiting-production-pill">
+                                    Chờ coordinator tạo sản xuất
+                                  </span>
+                                )}
 
                               {order.status === "waiting_production" &&
                                 planMapByOrderId[order.id]?.status === "pending" && (
                                   <span className="waiting-production-pill">
                                     Đang chờ nhận lệnh sản xuất
                                   </span>
-                              )}
+                                )}
 
                               {order.status === "waiting_production" &&
                                 planMapByOrderId[order.id]?.status === "processing" && (
                                   <span className="processing-pill">
                                     Đang sản xuất
                                   </span>
-                              )}
+                                )}
 
                               {order.status === "waiting_production" &&
                                 planMapByOrderId[order.id]?.status === "done" && (
                                   <span className="done-production-pill">
                                     Đã hoàn tất sản xuất
                                   </span>
+                                )}
+
+                              {order.status === "processing" && (
+                                <span className="processing-pill">Đang xử lý</span>
                               )}
 
-                            {order.status === "processing" && (
-                              <span className="processing-pill">Đang xử lý</span>
-                            )}
+                              {order.status === "processing" &&
+                                !deliveryMapByOrderId[order.id] && (
+                                  <button
+                                    className="delivery-btn"
+                                    onClick={() => {
+                                      setCreateDeliveryOrder(order);
+                                      setIsCreateDeliveryOpen(true);
+                                    }}
+                                  >
+                                    <FiTruck className="btn-icon" />
+                                    Giao cho bên vận chuyển
+                                  </button>
+                                )}
 
-                            {order.status === "processing" &&
-                              !deliveryMapByOrderId[order.id] && (
-                                <button
-                                  className="delivery-btn"
-                                  onClick={() => {
-                                    setCreateDeliveryOrder(order);
-                                    setIsCreateDeliveryOpen(true);
-                                  }}
-                                >
-                                  <FiTruck className="btn-icon" />
-                                  Giao cho bên vận chuyển
-                                </button>
-                              )}
+                              {order.status === "processing" &&
+                                deliveryMapByOrderId[order.id] && (
+                                  <span className="delivery-created-pill">
+                                    Đã tạo giao hàng
+                                  </span>
+                                )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
 
-                            {order.status === "processing" &&
-                              deliveryMapByOrderId[order.id] && (
-                                <span className="delivery-created-pill">
-                                  Đã tạo giao hàng
-                                </span>
-                              )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages || 1}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </>
           )}
         </div>
       </div>

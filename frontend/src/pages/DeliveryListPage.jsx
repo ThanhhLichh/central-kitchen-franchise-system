@@ -9,6 +9,7 @@ import { getOrderByIdApi } from "../api/orderApi";
 import { getStoresApi } from "../api/adminApi";
 import DeliveryDetailModal from "../components/DeliveryDetailModal";
 import ScheduleDeliveryModal from "../components/ScheduleDeliveryModal";
+import Pagination from "../components/Pagination";
 import { FiCalendar, FiEye, FiTruck, FiCheckCircle } from "react-icons/fi";
 import "./DeliveryListPage.css";
 
@@ -32,6 +33,9 @@ function DeliveryListPage() {
 
   const [scheduleDelivery, setScheduleDelivery] = useState(null);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const fetchDeliveries = async () => {
     try {
@@ -80,6 +84,17 @@ function DeliveryListPage() {
       return matchesSearch && matchesStatus;
     });
   }, [deliveries, search, statusFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
+
+  const totalPages = Math.ceil(filteredDeliveries.length / itemsPerPage);
+
+  const paginatedDeliveries = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredDeliveries.slice(start, start + itemsPerPage);
+  }, [filteredDeliveries, currentPage]);
 
   const handleViewDetail = async (id) => {
     try {
@@ -165,103 +180,111 @@ function DeliveryListPage() {
           ) : error ? (
             <div className="delivery-state error">{error}</div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Delivery ID</th>
-                    <th>Order ID</th>
-                    <th>Ngày giao</th>
-                    <th>Ngày tạo</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredDeliveries.length === 0 ? (
+            <>
+              <div className="table-wrap">
+                <table>
+                  <thead>
                     <tr>
-                      <td colSpan="6" className="empty-row">
-                        Không có giao hàng phù hợp.
-                      </td>
+                      <th>Delivery ID</th>
+                      <th>Order ID</th>
+                      <th>Ngày giao</th>
+                      <th>Ngày tạo</th>
+                      <th>Trạng thái</th>
+                      <th>Hành động</th>
                     </tr>
-                  ) : (
-                    filteredDeliveries.map((delivery) => (
-                      <tr key={delivery.id}>
-                        <td className="highlight-cell">DLV-{delivery.id}</td>
-                        <td>ORD-{delivery.order_id}</td>
-                        <td>{delivery.delivery_date || "--"}</td>
-                        <td>
-                          {delivery.created_at
-                            ? new Date(delivery.created_at).toLocaleDateString("vi-VN")
-                            : "--/--/----"}
-                        </td>
-                        <td>
-                          <span className={`status-badge ${delivery.status}`}>
-                            {delivery.status}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="delivery-actions">
-                            <button
-                              className="view-btn"
-                              onClick={() => handleViewDetail(delivery.id)}
-                              disabled={detailLoadingId === delivery.id}
-                            >
-                              <FiEye className="btn-icon" />
-                              {detailLoadingId === delivery.id ? "Đang tải..." : "Xem"}
-                            </button>
+                  </thead>
 
-                            {delivery.status === "pending" && (
-                              <button
-                                className="schedule-btn"
-                                onClick={() => {
-                                  setScheduleDelivery(delivery);
-                                  setIsScheduleOpen(true);
-                                }}
-                              >
-                                <FiCalendar className="btn-icon" />
-                                Lập lịch giao
-                              </button>
-                            )}
-
-                            {delivery.status === "pending" && (
-                              <button
-                                className="shipping-btn"
-                                onClick={() => handleUpdateStatus(delivery, "shipping")}
-                                disabled={actionLoadingId === delivery.id}
-                              >
-                                <FiTruck className="btn-icon" />
-                                {actionLoadingId === delivery.id
-                                  ? "Đang cập nhật..."
-                                  : "Bắt đầu giao"}
-                              </button>
-                            )}
-
-                            {delivery.status === "shipping" && (
-                              <button
-                                className="delivered-btn"
-                                onClick={() => handleUpdateStatus(delivery, "delivered")}
-                                disabled={actionLoadingId === delivery.id}
-                              >
-                                <FiCheckCircle className="btn-icon" />
-                                {actionLoadingId === delivery.id
-                                  ? "Đang cập nhật..."
-                                  : "Đã giao"}
-                              </button>
-                            )}
-
-                            {delivery.status === "delivered" && (
-                              <span className="done-pill">Hoàn tất</span>
-                            )}
-                          </div>
+                  <tbody>
+                    {paginatedDeliveries.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="empty-row">
+                          Không có giao hàng phù hợp.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      paginatedDeliveries.map((delivery) => (
+                        <tr key={delivery.id}>
+                          <td className="highlight-cell">DLV-{delivery.id}</td>
+                          <td>ORD-{delivery.order_id}</td>
+                          <td>{delivery.delivery_date || "--"}</td>
+                          <td>
+                            {delivery.created_at
+                              ? new Date(delivery.created_at).toLocaleDateString("vi-VN")
+                              : "--/--/----"}
+                          </td>
+                          <td>
+                            <span className={`status-badge ${delivery.status}`}>
+                              {delivery.status}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="delivery-actions">
+                              <button
+                                className="view-btn"
+                                onClick={() => handleViewDetail(delivery.id)}
+                                disabled={detailLoadingId === delivery.id}
+                              >
+                                <FiEye className="btn-icon" />
+                                {detailLoadingId === delivery.id ? "Đang tải..." : "Xem"}
+                              </button>
+
+                              {delivery.status === "pending" && (
+                                <button
+                                  className="schedule-btn"
+                                  onClick={() => {
+                                    setScheduleDelivery(delivery);
+                                    setIsScheduleOpen(true);
+                                  }}
+                                >
+                                  <FiCalendar className="btn-icon" />
+                                  Lập lịch giao
+                                </button>
+                              )}
+
+                              {delivery.status === "pending" && (
+                                <button
+                                  className="shipping-btn"
+                                  onClick={() => handleUpdateStatus(delivery, "shipping")}
+                                  disabled={actionLoadingId === delivery.id}
+                                >
+                                  <FiTruck className="btn-icon" />
+                                  {actionLoadingId === delivery.id
+                                    ? "Đang cập nhật..."
+                                    : "Bắt đầu giao"}
+                                </button>
+                              )}
+
+                              {delivery.status === "shipping" && (
+                                <button
+                                  className="delivered-btn"
+                                  onClick={() => handleUpdateStatus(delivery, "delivered")}
+                                  disabled={actionLoadingId === delivery.id}
+                                >
+                                  <FiCheckCircle className="btn-icon" />
+                                  {actionLoadingId === delivery.id
+                                    ? "Đang cập nhật..."
+                                    : "Đã giao"}
+                                </button>
+                              )}
+
+                              {delivery.status === "delivered" && (
+                                <span className="done-pill">Hoàn tất</span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages || 1}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </>
           )}
         </div>
 

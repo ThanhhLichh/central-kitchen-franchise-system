@@ -7,8 +7,9 @@ import { getDeliveriesApi } from "../api/deliveryApi";
 import axiosClient from "../api/axios";
 import { ORDER_API, INVENTORY_API } from "../api/config";
 import OrderDetailModal from "../components/OrderDetailModal";
+import Pagination from "../components/Pagination";
 import "./OrdersPage.css";
-import { FiEye, FiCheckCircle } from "react-icons/fi";
+import { FiEye, FiCheckCircle, FiXCircle } from "react-icons/fi";
 
 function OrdersPage() {
   const navigate = useNavigate();
@@ -29,6 +30,9 @@ function OrdersPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [loadingOrderId, setLoadingOrderId] = useState(null);
   const [receivingOrderId, setReceivingOrderId] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const fetchData = async () => {
     try {
@@ -141,6 +145,29 @@ function OrdersPage() {
     }
   };
 
+  const handleCancelOrder = async (order) => {
+    const confirmed = window.confirm(
+      `Bạn có chắc muốn hủy đơn ORD-${order.id} không?`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setReceivingOrderId(order.id);
+
+      await axiosClient.put(ORDER_API.UPDATE_STATUS(order.id), {
+        status: "cancelled",
+      });
+
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      alert("Hủy đơn hàng thất bại.");
+    } finally {
+      setReceivingOrderId(null);
+    }
+  };
+
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const matchesSearch =
@@ -153,6 +180,17 @@ function OrdersPage() {
       return matchesSearch && matchesStatus;
     });
   }, [orders, search, statusFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredOrders.slice(start, start + itemsPerPage);
+  }, [filteredOrders, currentPage]);
 
   return (
     <Layout>
@@ -192,6 +230,7 @@ function OrdersPage() {
             <option value="waiting_production">Waiting Production</option>
             <option value="processing">Processing</option>
             <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
 
@@ -201,94 +240,116 @@ function OrdersPage() {
           ) : error ? (
             <div className="orders-state error">{error}</div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Mã đơn</th>
-                    <th>Ngày tạo</th>
-                    <th>Trạng thái đơn</th>
-                    <th>Trạng thái giao hàng</th>
-                    <th>Số mặt hàng</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredOrders.length === 0 ? (
+            <>
+              <div className="table-wrap">
+                <table>
+                  <thead>
                     <tr>
-                      <td colSpan="6" className="empty-row">
-                        Không có đơn hàng phù hợp.
-                      </td>
+                      <th>Mã đơn</th>
+                      <th>Ngày tạo</th>
+                      <th>Trạng thái đơn</th>
+                      <th>Trạng thái giao hàng</th>
+                      <th>Số mặt hàng</th>
+                      <th>Hành động</th>
                     </tr>
-                  ) : (
-                    filteredOrders.map((order) => {
-                      const delivery = deliveryMapByOrderId[order.id];
+                  </thead>
 
-                      return (
-                        <tr key={order.id}>
-                          <td className="order-code">ORD-{order.id}</td>
-                          <td>
-                            {order.created_at
-                              ? new Date(order.created_at).toLocaleDateString("vi-VN")
-                              : "--/--/----"}
-                          </td>
-                          <td>
-                            <span className={`status-badge ${order.status}`}>
-                              {order.status}
-                            </span>
-                          </td>
-                          <td>
-                            {delivery ? (
-                              <span className={`delivery-badge ${delivery.status}`}>
-                                {delivery.status}
-                              </span>
-                            ) : (
-                              <span className="delivery-badge none">
-                                Chưa tạo giao hàng
-                              </span>
-                            )}
-                          </td>
-                          <td>{order.items?.length || 0}</td>
-                          <td>
-                            <div className="order-actions">
-                              <button
-                                className="view-btn"
-                                onClick={() => handleViewDetail(order.id)}
-                                disabled={detailLoading && loadingOrderId === order.id}
-                              >
-                                {detailLoading && loadingOrderId === order.id ? (
-                                  "Đang tải..."
-                                ) : (
-                                  <>
-                                    <FiEye className="btn-icon" />
-                                    Xem chi tiết
-                                  </>
-                                )}
-                              </button>
+                  <tbody>
+                    {paginatedOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="empty-row">
+                          Không có đơn hàng phù hợp.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedOrders.map((order) => {
+                        const delivery = deliveryMapByOrderId[order.id];
 
-                              {delivery?.status === "delivered" &&
-                                order.status !== "completed" && (
+                        return (
+                          <tr key={order.id}>
+                            <td className="order-code">ORD-{order.id}</td>
+                            <td>
+                              {order.created_at
+                                ? new Date(order.created_at).toLocaleDateString("vi-VN")
+                                : "--/--/----"}
+                            </td>
+                            <td>
+                              <span className={`status-badge ${order.status}`}>
+                                {order.status}
+                              </span>
+                            </td>
+                            <td>
+                              {delivery ? (
+                                <span className={`delivery-badge ${delivery.status}`}>
+                                  {delivery.status}
+                                </span>
+                              ) : (
+                                <span className="delivery-badge none">
+                                  Chưa tạo giao hàng
+                                </span>
+                              )}
+                            </td>
+                            <td>{order.items?.length || 0}</td>
+                            <td>
+                              <div className="order-actions">
+                                <button
+                                  className="view-btn"
+                                  onClick={() => handleViewDetail(order.id)}
+                                  disabled={detailLoading && loadingOrderId === order.id}
+                                >
+                                  {detailLoading && loadingOrderId === order.id ? (
+                                    "Đang tải..."
+                                  ) : (
+                                    <>
+                                      <FiEye className="btn-icon" />
+                                      Xem chi tiết
+                                    </>
+                                  )}
+                                </button>
+
+                                {(order.status === "pending" ||
+                                  order.status === "waiting_production") && (
                                   <button
-                                    className="receive-btn"
-                                    onClick={() => handleReceiveOrder(order)}
+                                    className="cancel-btn"
+                                    onClick={() => handleCancelOrder(order)}
                                     disabled={receivingOrderId === order.id}
                                   >
-                                    <FiCheckCircle className="btn-icon" />
+                                    <FiXCircle className="btn-icon" />
                                     {receivingOrderId === order.id
-                                      ? "Đang nhận..."
-                                      : "Nhận hàng"}
+                                      ? "Đang hủy..."
+                                      : "Hủy đơn"}
                                   </button>
                                 )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+
+                                {delivery?.status === "delivered" &&
+                                  order.status !== "completed" && (
+                                    <button
+                                      className="receive-btn"
+                                      onClick={() => handleReceiveOrder(order)}
+                                      disabled={receivingOrderId === order.id}
+                                    >
+                                      <FiCheckCircle className="btn-icon" />
+                                      {receivingOrderId === order.id
+                                        ? "Đang nhận..."
+                                        : "Nhận hàng"}
+                                    </button>
+                                  )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages || 1}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </>
           )}
         </div>
       </div>
@@ -308,4 +369,4 @@ function OrdersPage() {
   );
 }
 
-export default OrdersPage;
+export default OrdersPage;s

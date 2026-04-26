@@ -76,6 +76,7 @@ function ManagerReportsPage() {
       ).length,
       processing: orders.filter((o) => o.status === "processing").length,
       completed: orders.filter((o) => o.status === "completed").length,
+      cancelled: orders.filter((o) => o.status === "cancelled").length,
     };
   }, [orders]);
 
@@ -180,6 +181,10 @@ function ManagerReportsPage() {
                   <div className="report-item">
                     <span>Completed</span>
                     <strong>{orderStats.completed}</strong>
+                  </div>
+                  <div className="report-item">
+                    <span>Cancelled</span>
+                    <strong>{orderStats.cancelled}</strong>
                   </div>
                 </div>
               </div>

@@ -113,6 +113,7 @@ function ManagerDashboard() {
     const completedOrders = orders.filter(
       (o) => o.status === "completed"
     ).length;
+    const cancelledOrders = orders.filter((o) => o.status === "cancelled").length;
 
     const pendingDeliveries = deliveries.filter(
       (d) => d.status === "pending"
@@ -142,6 +143,7 @@ function ManagerDashboard() {
       pendingPlans,
       processingPlans,
       donePlans,
+      cancelledOrders,
     };
   }, [orders, deliveries, plans]);
 
@@ -151,6 +153,7 @@ function ManagerDashboard() {
       { name: "Waiting", value: stats.waitingProductionOrders },
       { name: "Processing", value: stats.processingOrders },
       { name: "Completed", value: stats.completedOrders },
+      { name: "Cancelled", value: stats.cancelledOrders },
     ],
     [stats]
   );
@@ -312,6 +315,7 @@ function ManagerDashboard() {
                         <Cell fill="#f59e0b" />
                         <Cell fill="#3b82f6" />
                         <Cell fill="#22c55e" />
+                        <Cell fill="#ef4444" />
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>

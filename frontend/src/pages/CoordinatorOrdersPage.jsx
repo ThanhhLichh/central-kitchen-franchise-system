@@ -6,6 +6,7 @@ import { getStoresApi } from "../api/adminApi";
 import { getProductionPlansApi } from "../api/productionApi";
 import CoordinatorOrderDetailModal from "../components/CoordinatorOrderDetailModal";
 import CreateProductionPlanModal from "../components/CreateProductionPlanModal";
+import Pagination from "../components/Pagination";
 import { FiEye, FiTool } from "react-icons/fi";
 import "./CoordinatorOrdersPage.css";
 
@@ -27,18 +28,22 @@ function CoordinatorOrdersPage() {
 
   const [createPlanOrder, setCreatePlanOrder] = useState(null);
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const getPlanActionLabel = (status) => {
-  switch (status) {
-    case "pending":
-      return "Đang chờ nhận lệnh";
-    case "processing":
-      return "Đang sản xuất";
-    case "done":
-      return "Đã hoàn tất sản xuất";
-    default:
-      return "Chưa tạo";
-  }
-};
+    switch (status) {
+      case "pending":
+        return "Đang chờ nhận lệnh";
+      case "processing":
+        return "Đang sản xuất";
+      case "done":
+        return "Đã hoàn tất sản xuất";
+      default:
+        return "Chưa tạo";
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -108,6 +113,17 @@ function CoordinatorOrdersPage() {
     });
   }, [orders, search, statusFilter, storeMap, planMapByOrderId]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredOrders.slice(start, start + itemsPerPage);
+  }, [filteredOrders, currentPage]);
+
   const handleViewDetail = async (orderId) => {
     try {
       setDetailLoadingId(orderId);
@@ -162,95 +178,91 @@ function CoordinatorOrdersPage() {
           ) : error ? (
             <div className="coordinator-state error">{error}</div>
           ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Mã đơn</th>
-                    <th>Cửa hàng</th>
-                    <th>Ngày tạo</th>
-                    <th>Trạng thái đơn</th>
-                    {/* <th>Trạng thái plan</th> */}
-                    <th>Số SP thiếu</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {filteredOrders.length === 0 ? (
+            <>
+              <div className="table-wrap">
+                <table>
+                  <thead>
                     <tr>
-                      <td colSpan="6" className="empty-row">
-                        Không có đơn hàng phù hợp.
-                      </td>
+                      <th>Mã đơn</th>
+                      <th>Cửa hàng</th>
+                      <th>Ngày tạo</th>
+                      <th>Trạng thái đơn</th>
+                      <th>Số SP thiếu</th>
+                      <th>Hành động</th>
                     </tr>
-                  ) : (
-                    filteredOrders.map((order) => {
-                      const plan = planMapByOrderId[order.id];
+                  </thead>
 
-                      return (
-                        <tr key={order.id}>
-                          <td className="highlight-cell">ORD-{order.id}</td>
-                          <td>{storeMap[order.store_id]?.name || order.store_id || "--"}</td>
-                          <td>
-                            {order.created_at
-                              ? new Date(order.created_at).toLocaleDateString("vi-VN")
-                              : "--/--/----"}
-                          </td>
-                          <td>
-                            <span className={`status-badge ${order.status}`}>
-                              {order.status}
-                            </span>
-                          </td>
-                          {/* <td>
-                            {plan ? (
-                              <span className={`plan-badge ${plan.status}`}>
-                                {plan.status === "pending" && "pending"}
-                                {plan.status === "processing" && "processing"}
-                                {plan.status === "done" && "done"}
+                  <tbody>
+                    {paginatedOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="empty-row">
+                          Không có đơn hàng phù hợp.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedOrders.map((order) => {
+                        const plan = planMapByOrderId[order.id];
+
+                        return (
+                          <tr key={order.id}>
+                            <td className="highlight-cell">ORD-{order.id}</td>
+                            <td>{storeMap[order.store_id]?.name || order.store_id || "--"}</td>
+                            <td>
+                              {order.created_at
+                                ? new Date(order.created_at).toLocaleDateString("vi-VN")
+                                : "--/--/----"}
+                            </td>
+                            <td>
+                              <span className={`status-badge ${order.status}`}>
+                                {order.status}
                               </span>
-                            ) : (
-                              <span className="plan-badge none">Chưa tạo</span>
-                            )}
-                          </td> */}
-                          <td>{order.missing_items?.length || 0}</td>
-                          <td>
-                            <div className="coordinator-actions">
-                              <button
-                                className="view-btn"
-                                onClick={() => handleViewDetail(order.id)}
-                                disabled={detailLoadingId === order.id}
-                              >
-                                <FiEye className="btn-icon" />
-                                {detailLoadingId === order.id ? "Đang tải..." : "Xem"}
-                              </button>
-
-                              {order.status === "waiting_production" && !plan && (
+                            </td>
+                            <td>{order.missing_items?.length || 0}</td>
+                            <td>
+                              <div className="coordinator-actions">
                                 <button
-                                  className="plan-btn"
-                                  onClick={() => {
-                                    setCreatePlanOrder(order);
-                                    setIsCreatePlanOpen(true);
-                                  }}
+                                  className="view-btn"
+                                  onClick={() => handleViewDetail(order.id)}
+                                  disabled={detailLoadingId === order.id}
                                 >
-                                  <FiTool className="btn-icon" />
-                                  Tạo lệnh sản xuất
+                                  <FiEye className="btn-icon" />
+                                  {detailLoadingId === order.id ? "Đang tải..." : "Xem"}
                                 </button>
-                              )}
 
-                              {order.status === "waiting_production" && plan && (
-                                <span className={`plan-created-pill ${plan.status}`}>
-                                    {getPlanActionLabel(plan.status)}
-                                </span>
+                                {order.status === "waiting_production" && !plan && (
+                                  <button
+                                    className="plan-btn"
+                                    onClick={() => {
+                                      setCreatePlanOrder(order);
+                                      setIsCreatePlanOpen(true);
+                                    }}
+                                  >
+                                    <FiTool className="btn-icon" />
+                                    Tạo lệnh sản xuất
+                                  </button>
                                 )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+
+                                {order.status === "waiting_production" && plan && (
+                                  <span className={`plan-created-pill ${plan.status}`}>
+                                    {getPlanActionLabel(plan.status)}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages || 1}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </>
           )}
         </div>
 

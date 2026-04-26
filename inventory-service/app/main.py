@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 from app.config.db import init_db, db
 import time
 from sqlalchemy.exc import OperationalError
@@ -6,7 +7,6 @@ from sqlalchemy.exc import OperationalError
 from app.routes.product_routes import product_bp
 from app.routes.inventory_routes import inventory_bp
 
-# import model để create table
 from app.models.product import Product
 from app.models.inventory import Inventory
 from app.models.stock_movement import StockMovement
@@ -14,6 +14,8 @@ from app.models.stock_movement import StockMovement
 
 def create_app():
     app = Flask(__name__)
+
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     init_db(app)
 

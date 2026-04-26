@@ -3,6 +3,7 @@ import { FiPlus, FiMapPin, FiHome, FiPackage, FiSearch, FiX } from "react-icons/
 import Layout from "../components/Layout";
 import { getStoresApi } from "../api/adminApi";
 import CreateStoreModal from "../components/CreateStoreModal";
+import Pagination from "../components/Pagination";
 import "./StoresPage.css";
 
 function StoresPage() {
@@ -10,6 +11,9 @@ function StoresPage() {
   const [loading, setLoading] = useState(true);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   const fetchStores = async () => {
     try {
@@ -38,6 +42,17 @@ function StoresPage() {
       return name.includes(q) || address.includes(q);
     });
   }, [stores, keyword]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [keyword]);
+
+  const totalPages = Math.ceil(filteredStores.length / itemsPerPage);
+
+  const paginatedStores = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredStores.slice(start, start + itemsPerPage);
+  }, [filteredStores, currentPage]);
 
   return (
     <Layout>
@@ -106,36 +121,44 @@ function StoresPage() {
               <p>Thử đổi từ khóa tìm kiếm hoặc thêm cửa hàng mới.</p>
             </div>
           ) : (
-            <div className="table-wrapper">
-              <table className="stores-table">
-                <thead>
-                  <tr>
-                    <th>Tên cửa hàng</th>
-                    <th>Địa chỉ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStores.map((s) => (
-                    <tr key={s.id}>
-                      <td>
-                        <div className="store-name-cell">
-                          <div className="store-icon">
-                            <FiHome />
-                          </div>
-                          <span>{s.name}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="store-address-cell">
-                          <FiMapPin />
-                          <span>{s.address}</span>
-                        </div>
-                      </td>
+            <>
+              <div className="table-wrapper">
+                <table className="stores-table">
+                  <thead>
+                    <tr>
+                      <th>Tên cửa hàng</th>
+                      <th>Địa chỉ</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedStores.map((s) => (
+                      <tr key={s.id}>
+                        <td>
+                          <div className="store-name-cell">
+                            <div className="store-icon">
+                              <FiHome />
+                            </div>
+                            <span>{s.name}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="store-address-cell">
+                            <FiMapPin />
+                            <span>{s.address}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages || 1}
+                onPageChange={(page) => setCurrentPage(page)}
+              />
+            </>
           )}
         </div>
 

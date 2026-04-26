@@ -7,8 +7,10 @@ from pydantic import BaseModel, Field, ConfigDict
 
 class OrderStatus(str, Enum):
     pending = "pending"
+    waiting_production = "waiting_production"
     processing = "processing"
     completed = "completed"
+    cancelled = "cancelled"
 
 
 class OrderItemCreate(BaseModel):
@@ -28,6 +30,11 @@ class OrderItemResponse(BaseModel):
     quantity: int
 
 
+class MissingItemResponse(BaseModel):
+    product_id: int
+    missing_quantity: int
+
+
 class OrderResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -37,11 +44,13 @@ class OrderResponse(BaseModel):
     status: OrderStatus
     created_at: datetime
     items: List[OrderItemResponse]
+    missing_items: List[MissingItemResponse] = []
 
 
 class OrderCreateResponse(BaseModel):
     order_id: int
     status: OrderStatus
+    missing_items: List[MissingItemResponse] = []
 
 
 class OrderStatusUpdate(BaseModel):

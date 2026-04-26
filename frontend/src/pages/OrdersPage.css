@@ -210,3 +210,21 @@ tbody td {
   background: #fef3c7;
   color: #b45309;
 }
+
+.cancel-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.delivery-badge.cancelled {
+  background: #e5e7eb;
+  color: #475569;
+}
+
