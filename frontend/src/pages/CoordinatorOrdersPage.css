@@ -1,0 +1,120 @@
+.coordinator-orders-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.coordinator-orders-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.coordinator-orders-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.coordinator-orders-subtitle {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.coordinator-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.coordinator-orders-panel {
+  background: #fff;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  border: 1px solid #eef2f7;
+}
+
+.coordinator-state {
+  color: #334155;
+}
+
+.coordinator-state.error {
+  color: #dc2626;
+}
+
+.coordinator-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plan-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.status-badge.waiting_production {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.plan-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.plan-badge.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.plan-badge.processing {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.plan-badge.done {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.plan-badge.none {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.plan-created-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.plan-created-pill.processing {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.plan-created-pill.done {
+  background: #dcfce7;
+  color: #15803d;
+}
