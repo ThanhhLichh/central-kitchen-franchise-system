@@ -123,6 +123,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=FranchiseAuthDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True;"
       ConnectionStrings__RedisCache: "redis:6379"
+    volumes:
+    - ./AuthService/firebase-adminsdk.json:/app/firebase-adminsdk.json:ro
 
   order-service:
     build:

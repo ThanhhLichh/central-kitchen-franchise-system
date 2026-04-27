@@ -15,6 +15,7 @@ BACKOFFICE_ROLES = {
     "Admin",
 }
 INVENTORY_SERVICE_URL = os.getenv("INVENTORY_SERVICE_URL", "http://inventory_service:5000")
+AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL", "http://authservice:8080")
 
 
 def extract_roles(current_user: dict) -> list[str]:
@@ -53,10 +54,11 @@ def is_backoffice_user(current_user: dict) -> bool:
     return has_role(current_user, BACKOFFICE_ROLES)
 
 
-def handle_create_order(db: Session, order_data, current_user: dict):
+def handle_create_order(db: Session, order_data, current_user: dict, auth_header: str):
     try:
         user_id = current_user.get("UserId")
         store_id = current_user.get("StoreId")
+        store_name = current_user.get("StoreName", "")
 
         if not user_id:
             raise HTTPException(status_code=401, detail="UserId not found in token")
@@ -104,6 +106,20 @@ def handle_create_order(db: Session, order_data, current_user: dict):
         if available:
             publish_order(items_payload)
 
+            send_notification_to_role(
+                role="CentralKitchenStaff",
+                title="Đơn hàng mới",
+                body=f"Có đơn hàng mới #{new_order.id} từ cửa hàng {store_name or store_id} cần xử lý.",
+                auth_header=auth_header
+            )
+        else:
+            send_notification_to_role(
+                role="SupplyCoordinator",
+                title="Đơn hàng chờ sản xuất",
+                body=f"Đơn hàng #{new_order.id} từ cửa hàng {store_name or store_id} đang thiếu hàng và cần lập kế hoạch sản xuất.",
+                auth_header=auth_header
+            )
+
         return {
             "order_id": new_order.id,
             "status": new_order.status,
@@ -130,6 +146,47 @@ def check_inventory_stock(items: list[dict]) -> dict:
             status_code=500,
             detail=f"Failed to check inventory stock: {str(e)}"
         )
+
+def return_inventory_stock(items: list[dict]):
+    try:
+        for item in items:
+            response = requests.post(
+                f"{INVENTORY_SERVICE_URL}/inventory/import",
+                json={
+                    "product_id": item["product_id"],
+                    "quantity": item["quantity"]
+                },
+                timeout=5
+            )
+            response.raise_for_status()
+
+        return {"success": True}
+    except requests.RequestException as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to return inventory stock: {str(e)}"
+        )
+    
+def send_notification_to_role(role: str, title: str, body: str, auth_header: str):
+    try:
+        headers = {}
+        if auth_header:
+            headers["Authorization"] = auth_header
+
+        response = requests.post(
+            f"{AUTH_SERVICE_URL}/api/notification/send",
+            json={
+                "role": role,
+                "title": title,
+                "body": body
+            },
+            headers=headers,
+            timeout=5
+        )
+        response.raise_for_status()
+    except requests.RequestException as e:
+        # không làm fail create order nếu notification lỗi
+        print(f"Failed to send notification: {e}")
     
 def handle_get_orders(db: Session, current_user: dict):
     try:
@@ -239,7 +296,6 @@ def handle_update_order_status(
 
         current_status = order.status
 
-        # 1) Store staff chỉ được completed đơn của store mình
         if is_store_staff(current_user):
             store_id = current_user.get("StoreId")
 
@@ -249,7 +305,6 @@ def handle_update_order_status(
             if str(order.store_id) != str(store_id):
                 raise HTTPException(status_code=403, detail="You can only update orders of your own store")
 
-            # Store staff được complete hoặc cancel
             if new_status not in {"completed", "cancelled"}:
                 raise HTTPException(
                     status_code=403,
@@ -270,34 +325,51 @@ def handle_update_order_status(
                         detail=f"Store can only cancel orders that are in 'pending' or 'waiting_production', current status is '{current_status}'"
                     )
 
-            # 2) Backoffice chỉ được pending -> processing
-            elif is_backoffice_user(current_user):
-                if new_status not in {"processing", "waiting_production"}:
+                # Nếu đơn đang pending thì trước đó kho đã bị trừ, phải hoàn lại
+                if current_status == "pending":
+                    items_payload = [
+                        {
+                            "product_id": item.product_id,
+                            "quantity": item.quantity
+                        }
+                        for item in order.items
+                    ]
+
+                    return_inventory_stock(items_payload)
+
+        elif is_backoffice_user(current_user):
+            if new_status not in {"processing", "waiting_production"}:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Backoffice users can only update order status to processing or waiting_production"
+                )
+
+            if new_status == "processing":
+                if current_status not in {"pending", "waiting_production"}:
                     raise HTTPException(
-                        status_code=403,
-                        detail="Backoffice users can only update order status to processing or waiting_production"
+                        status_code=400,
+                        detail=(
+                            "Backoffice can only move orders from "
+                            f"'pending' or 'waiting_production' to 'processing', "
+                            f"current status is '{current_status}'"
+                        )
                     )
 
-                if new_status == "processing":
-                    if current_status not in {"pending", "waiting_production"}:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=(
-                                "Backoffice can only move orders from "
-                                f"'pending' or 'waiting_production' to 'processing', "
-                                f"current status is '{current_status}'"
-                            )
+            if new_status == "waiting_production":
+                if current_status != "pending":
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "Backoffice can only move orders from "
+                            f"'pending' to 'waiting_production', current status is '{current_status}'"
                         )
+                    )
 
-                if new_status == "waiting_production":
-                    if current_status != "pending":
-                        raise HTTPException(
-                            status_code=400,
-                            detail=(
-                                "Backoffice can only move orders from "
-                                f"'pending' to 'waiting_production', current status is '{current_status}'"
-                            )
-                        )
+        else:
+            raise HTTPException(
+                status_code=403,
+                detail="You do not have permission to update order status"
+            )
 
         order.status = new_status
         db.commit()

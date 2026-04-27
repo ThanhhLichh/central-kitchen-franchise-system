@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { loginApi } from "../api/authApi";
 import { jwtDecode } from "jwt-decode";
 import { getDefaultRouteByRole } from "../utils/getDefaultRouteByRole";
+import { initNotification } from "../utils/notification";
 
 function Login() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ function Login() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
 
   //  handle input
   const handleChange = (e) => {
@@ -50,17 +52,28 @@ function Login() {
       decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] ||
       "";
 
+    const userId = decoded.UserId || "";
+    const storeId = decoded.StoreId || "";
+    const locationType = decoded.LocationType || "";
+    const fullName = decoded.FullName || "";
+    const storeName = decoded.StoreName || "";
+
     localStorage.setItem("token", token);
     localStorage.setItem("expiration", data.expiration || "");
     localStorage.setItem("role", role);
     localStorage.setItem("username", username);
-    localStorage.setItem("userId", decoded.UserId || "");
-    localStorage.setItem("storeId", decoded.StoreId || "");
-    localStorage.setItem("locationType", decoded.LocationType || "");
-    localStorage.setItem("fullName", decoded.FullName || "");
-    localStorage.setItem("storeName", decoded.StoreName || "");
+    localStorage.setItem("userId", userId);
+    localStorage.setItem("storeId", storeId);
+    localStorage.setItem("locationType", locationType);
+    localStorage.setItem("fullName", fullName);
+    localStorage.setItem("storeName", storeName);
 
-       navigate(getDefaultRouteByRole(role));
+    // đăng ký notification sau login
+    if (userId) {
+      await initNotification(userId);
+    }
+
+    navigate(getDefaultRouteByRole(role));
   } catch (err) {
     console.error(err);
 
@@ -122,7 +135,7 @@ function Login() {
               required
             />
           </div>
-
+{/* 
           <div className="login-options">
             <label className="remember-switch">
               <input type="checkbox" />
@@ -133,7 +146,7 @@ function Login() {
             <a href="#" className="forgot-link">
               Quên mật khẩu ?
             </a>
-          </div>
+          </div> */}
 
           {/*  Hiển thị lỗi */}
           {error && (

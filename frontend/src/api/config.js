@@ -48,3 +48,9 @@ export const PRODUCTION_API = {
   CREATE: `${GATEWAY_BASE_URL}/production-plan`,
   UPDATE_STATUS: `${GATEWAY_BASE_URL}/production-status`,
 };
+
+export const NOTIFICATION_API = {
+  REGISTER_TOKEN: `${GATEWAY_BASE_URL}/api/notification/register-token`,
+  SEND: `${GATEWAY_BASE_URL}/api/notification/send`,
+  SEND_TO_USER: `${GATEWAY_BASE_URL}/api/notification/send-to-user`,
+};

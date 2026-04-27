@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -23,11 +23,13 @@ router = APIRouter(tags=["Orders"])
 
 @router.post("/orders", response_model=OrderCreateResponse)
 def create_order_route(
+    request: Request,
     order: OrderCreate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    return create_order(db, order, current_user)
+    auth_header = request.headers.get("Authorization", "")
+    return create_order(db, order, current_user, auth_header)
 
 
 @router.get("/orders", response_model=List[OrderResponse])

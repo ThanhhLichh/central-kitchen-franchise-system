@@ -9,8 +9,8 @@ from app.services.order_service import (
 )
 
 
-def create_order(db: Session, order: OrderCreate, current_user: dict):
-    return handle_create_order(db, order, current_user)
+def create_order(db: Session, order: OrderCreate, current_user: dict, auth_header: str):
+    return handle_create_order(db, order, current_user, auth_header)
 
 
 def get_orders(db: Session, current_user: dict):
