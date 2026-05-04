@@ -37,7 +37,7 @@ Hệ thống được xây dựng theo kiến trúc **Microservices**, cho phép
 | **Order Service** |  Tiếp nhận và quản lý vòng đời đơn hàng từ các cửa hàng Franchise. |
 | **Inventory Service** |  Theo dõi số lượng tồn kho nguyên liệu và thành phẩm tại bếp và cửa hàng. |
 | **Production Service** |  Lập kế hoạch sản xuất và điều phối quy trình chế biến tại bếp trung tâm. |
-| **Delivery Service** |  Quản lý đội xe, lộ trình và trạng thái giao hàng từ bếp đến cửa hàng. |
+| **Delivery Service** |  Quản trạng thái giao hàng từ bếp đến cửa hàng. |
 
 ---
 
@@ -61,8 +61,8 @@ Quy trình vận hành chuẩn của hệ thống:
 *   **Franchise Store Staff:** Đặt hàng, xác nhận nhận hàng.
 *   **Central Kitchen Staff:** Tiếp nhận lệnh sản xuất, cập nhật trạng thái chế biến.
 *   **Supply Coordinator:** Điều phối đơn hàng, quản lý lượng tồn kho tổng.
-*   **Manager:** Theo dõi báo cáo, hiệu suất làm việc và doanh thu.
-*   **Admin:** Quản trị hệ thống, quản lý tài khoản và cấu hình các service.
+*   **Manager:** Theo dõi báo cáo tổng quan, hiệu suất làm việc.
+*   **Admin:** Quản trị hệ thống, quản lý tài khoản .
 
 ---
 
@@ -73,11 +73,14 @@ Quy trình vận hành chuẩn của hệ thống:
 ![C#](https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=c-sharp&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)
+![Firebase](https://img.shields.io/badge/firebase-ffca28?style=for-the-badge&logo=firebase&logoColor=black)
+
 
 *   **Backend:** Python , C# 
 *   **Infrastructure:** Docker
-*   **Message Broker:** RabbitMQ 
-*   **Database:** PostgreSQL / MongoDB /  MySQL 
+*   **Message Broker:** RabbitMQ
+*   **Database:** PostgreSQL / MongoDB /  MySQL
+*   **Firebassse notification**
 
 ---
 
@@ -86,16 +89,39 @@ Quy trình vận hành chuẩn của hệ thống:
 
 ```text
 central-kitchen-system/
-├── AuthService/           # Xác thực và phân quyền
+├── AuthService/            # Xác thực và phân quyền     
 ├── order-service/          # Quản lý đơn hàng
 ├── inventory-service/      # Quản lý kho hàng
 ├── production-service/     # Quản lý sản xuất tại bếp
 ├── delivery-service/       # Quản lý giao hàng
+├── api-gateway/
+├── frontend/     
 ├── docker-compose.yml     
 └── README.md
 ```
 
 ---
+
+##  Cách chạy hệ thống (Getting Started)
+```text
+1. Yêu cầu môi trường (Prerequisites)
+
+Đảm bảo máy đã cài đặt:
+
+Docker & Docker Compose
+Git
+(Optional) .NET SDK, Python nếu muốn chạy service riêng lẻ
+
+2. Clone project
+
+git clone https://github.com/your-repo/central-kitchen-system.git
+cd central-kitchen-system
+
+3. Chạy hệ thống bằng Docker
+
+docker-compose up --build
+
+```
 
 ##  Thành viên nhóm (Team Members)
 
