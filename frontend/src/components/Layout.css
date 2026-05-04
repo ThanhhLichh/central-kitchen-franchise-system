@@ -13,6 +13,36 @@
   min-height: 100vh;
 }
 
+.app-layout {
+  display: flex;
+}
+
+.layout-main {
+  flex: 1;
+  margin-left: 250px;
+  transition: margin-left 0.25s ease;
+}
+
+.app-layout.sidebar-collapsed .layout-main {
+  margin-left: 78px;
+}
+
+.layout-content {
+  padding: 20px;
+  background: #f9fafb;
+  min-height: 100vh;
+}
+
+@media (max-width: 900px) {
+  .layout-main {
+    margin-left: 220px;
+  }
+
+  .app-layout.sidebar-collapsed .layout-main {
+    margin-left: 78px;
+  }
+}
+
 @media (max-width: 900px) {
   .layout-main {
     margin-left: 220px;

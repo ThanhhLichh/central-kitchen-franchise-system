@@ -59,6 +59,7 @@ function Login() {
     const storeName = decoded.StoreName || "";
 
     localStorage.setItem("token", token);
+    localStorage.setItem("refreshToken", data.refreshToken || "");
     localStorage.setItem("expiration", data.expiration || "");
     localStorage.setItem("role", role);
     localStorage.setItem("username", username);

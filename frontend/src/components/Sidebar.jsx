@@ -13,6 +13,8 @@ import {
   FiPackage,
   FiEdit3,
   FiMail,
+  FiChevronLeft,
+  FiChevronRight,
 } from "react-icons/fi";
 import logo from "../assets/logo.png";
 import "./Sidebar.css";
@@ -29,7 +31,6 @@ const iconMap = {
   "Kho trung tâm": <FiArchive />,
   "Lệnh sản xuất": <FiPackage />,
 
-
   "Sản xuất": <FiPackage />,
   "Cập nhật trạng thái": <FiEdit3 />,
   "Đơn chờ sản xuất": <FiPackage />,
@@ -44,7 +45,7 @@ const iconMap = {
   "Cửa hàng": <FiShoppingBag />,
 };
 
-function Sidebar() {
+function Sidebar({ collapsed = false, onToggle }) {
   const navigate = useNavigate();
   const location = useLocation();
   const role = localStorage.getItem("role");
@@ -52,14 +53,26 @@ function Sidebar() {
   const menu = menuByRole[role] || [];
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
+      <button
+        type="button"
+        className="sidebar-toggle-btn"
+        onClick={onToggle}
+        title={collapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
+      >
+        {collapsed ? <FiChevronRight /> : <FiChevronLeft />}
+      </button>
+
       <div className="sidebar-brand">
         <div className="sidebar-brand-left">
           <img src={logo} alt="CenKit Logo" className="sidebar-logo" />
-          <div className="sidebar-brand-text">
-            <h2>CenKit</h2>
-            <p>System</p>
-          </div>
+
+          {!collapsed && (
+            <div className="sidebar-brand-text">
+              <h2>CenKit</h2>
+              <p>System</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -74,30 +87,37 @@ function Sidebar() {
               key={index}
               className={`sidebar-item ${isActive ? "active" : ""}`}
               onClick={() => navigate(item.path)}
+              title={collapsed ? item.label : ""}
             >
               <span className="sidebar-item-icon">
                 {iconMap[item.label] || <FiHome />}
               </span>
-              <span className="sidebar-item-label">{item.label}</span>
+
+              {!collapsed && (
+                <span className="sidebar-item-label">{item.label}</span>
+              )}
             </button>
           );
         })}
       </nav>
-            <div className="sidebar-support-card">
-        <FiMail className="sidebar-support-icon" />
 
-        <div className="sidebar-support-text">
-          <p>Hỗ trợ </p>
-          <span>Liên hệ</span>
+      {!collapsed && (
+        <div className="sidebar-support-card">
+          <FiMail className="sidebar-support-icon" />
+
+          <div className="sidebar-support-text">
+            <p>Hỗ trợ</p>
+            <span>Liên hệ</span>
+          </div>
+
+          <a
+            href="mailto:buithanhlich931@gmail.com?subject=Hỗ trợ hệ thống CenKit"
+            className="sidebar-support-btn"
+          >
+            Gửi
+          </a>
         </div>
-
-        <a
-          href="mailto:buithanhlich931@gmail.com?subject=Hỗ trợ hệ thống CenKit"
-          className="sidebar-support-btn"
-        >
-          Gửi
-        </a>
-      </div>
+      )}
     </aside>
   );
 }
